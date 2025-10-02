@@ -1,0 +1,585 @@
+{% extends "layout.html" %}
+
+{% block body %}
+  <!-- Success Message Toast -->
+  <div class="toast-container position-fixed top-0 end-0 p-3">
+    {% for message in messages %}
+      <div class="toast align-items-center text-white bg-{% if message.tags == 'success' %}success{% else %}danger{% endif %} border-0" 
+           role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="5000">
+        <div class="d-flex">
+          <div class="toast-body">
+            <i class="fas fa-{% if message.tags == 'success' %}check-circle{% else %}exclamation-circle{% endif %} me-2"></i>
+            {{ message }}
+          </div>
+          <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+
+  <div class="container py-4">
+    <div class="row">
+      <!-- Add Question Form -->
+      <div class="col-lg-8">
+        <div class="page-header mb-4">
+          <h1 class="display-5 fw-bold text-primary mb-2">Add New Question</h1>
+          <p class="lead text-muted">Create a new question for your question bank</p>
+        </div>
+        
+        <div class="card shadow-lg border-0 rounded-3 animate-fade-in mb-4">
+          <div class="card-body p-4 p-md-5">
+            <form id="questionForm" action="{% url 'myquestions' %}" method="post">
+              {% csrf_token %}
+              
+              <!-- Question Text -->
+              <div class="mb-4">
+                <label for="questionText" class="form-label fw-semibold fs-5 text-dark">
+                  <i class="fas fa-comment-alt me-2 text-primary"></i>Question Text
+                </label>
+                <textarea name="question" class="form-control form-control-lg border-2" 
+                          id="questionText" placeholder="Enter your question here..." 
+                          rows="4" required></textarea>
+                <div class="form-text">Enter the complete question text</div>
+              </div>
+              
+              <div class="row g-3 mb-4">
+                <!-- Subject -->
+                <div class="col-md-6">
+                  <label for="subjectInput" class="form-label fw-semibold text-dark">
+                    <i class="fas fa-book me-2 text-info"></i>Subject
+                  </label>
+                  <input name="subject" type="text" class="form-control border-2" 
+                         id="subjectInput" placeholder="e.g., Mathematics, Physics" required>
+                </div>
+                
+                <!-- Topic -->
+                <div class="col-md-6">
+                  <label for="topicInput" class="form-label fw-semibold text-dark">
+                    <i class="fas fa-tags me-2 text-info"></i>Sub-Topic
+                  </label>
+                  <input name="topic" type="text" class="form-control border-2" 
+                         id="topicInput" placeholder="e.g., Algebra, Thermodynamics" required>
+                </div>
+              </div>
+              
+              <div class="row g-3 mb-4">
+                <!-- Marks -->
+                <div class="col-md-6">
+                  <label for="marksInput" class="form-label fw-semibold text-dark">
+                    <i class="fas fa-star me-2 text-warning"></i>Marks
+                  </label>
+                  <select name="marks" class="form-select border-2" id="marksInput" required>
+                    <option value="">Select marks...</option>
+                    <option value="2">2 Marks (Short Answer)</option>
+                    <option value="5">5 Marks (Medium Answer)</option>
+                    <option value="10">10 Marks (Long Answer)</option>
+                    <option value="15">15 Marks (Very Long Answer)</option>
+                    <option value="20">20 Marks (Essay Type)</option>
+                  </select>
+                  <div class="form-text">Select the marks allocated for this question</div>
+                </div>
+                
+                <!-- Difficulty Level -->
+                <div class="col-md-6">
+                  <label for="difficultySelect" class="form-label fw-semibold text-dark">
+                    <i class="fas fa-tachometer-alt me-2 text-secondary"></i>Difficulty Level
+                  </label>
+                  <select name="difficulty" class="form-select border-2" id="difficultySelect">
+                    <option value="1">1 - Very Easy</option>
+                    <option value="2">2 - Easy</option>
+                    <option value="3" selected>3 - Moderate</option>
+                    <option value="4">4 - Difficult</option>
+                    <option value="5">5 - Very Difficult</option>
+                  </select>
+                  <div class="form-text">Select the difficulty level</div>
+                </div>
+              </div>
+              
+              <!-- Answer -->
+              <div class="mb-4">
+                <label for="answerText" class="form-label fw-semibold text-dark">
+                  <i class="fas fa-edit me-2 text-success"></i>Answer
+                </label>
+                <textarea name="answer" class="form-control border-2" 
+                          id="answerText" placeholder="Enter the answer to the question..." 
+                          rows="3"></textarea>
+                <div class="form-text">Optional: Provide the answer or solution</div>
+              </div>
+              
+              <!-- CO's Mapping -->
+              <div class="mb-4">
+                <label class="form-label fw-semibold text-dark">
+                  <i class="fas fa-project-diagram me-2 text-info"></i>Course Outcomes Mapping
+                </label>
+                <p class="text-muted mb-3">Select the Course Outcomes this question addresses</p>
+                
+                <div class="row g-3">
+                  <div class="col-md-4">
+                    <div class="form-check co-card p-3 border rounded-2 hover-lift">
+                      <input class="form-check-input" type="checkbox" value="1" id="co1" name="cos" checked>
+                      <label class="form-check-label fw-medium w-100" for="co1">
+                        <span class="badge bg-primary me-2">CO1</span>
+                        Course Outcome 1
+                      </label>
+                    </div>
+                  </div>
+                  <div class="col-md-4">
+                    <div class="form-check co-card p-3 border rounded-2 hover-lift">
+                      <input class="form-check-input" type="checkbox" value="2" id="co2" name="cos">
+                      <label class="form-check-label fw-medium w-100" for="co2">
+                        <span class="badge bg-primary me-2">CO2</span>
+                        Course Outcome 2
+                      </label>
+                    </div>
+                  </div>
+                  <div class="col-md-4">
+                    <div class="form-check co-card p-3 border rounded-2 hover-lift">
+                      <input class="form-check-input" type="checkbox" value="3" id="co3" name="cos">
+                      <label class="form-check-label fw-medium w-100" for="co3">
+                        <span class="badge bg-primary me-2">CO3</span>
+                        Course Outcome 3
+                      </label>
+                    </div>
+                  </div>
+                  <div class="col-md-4">
+                    <div class="form-check co-card p-3 border rounded-2 hover-lift">
+                      <input class="form-check-input" type="checkbox" value="4" id="co4" name="cos">
+                      <label class="form-check-label fw-medium w-100" for="co4">
+                        <span class="badge bg-primary me-2">CO4</span>
+                        Course Outcome 4
+                      </label>
+                    </div>
+                  </div>
+                  <div class="col-md-4">
+                    <div class="form-check co-card p-3 border rounded-2 hover-lift">
+                      <input class="form-check-input" type="checkbox" value="5" id="co5" name="cos">
+                      <label class="form-check-label fw-medium w-100" for="co5">
+                        <span class="badge bg-primary me-2">CO5</span>
+                        Course Outcome 5
+                      </label>
+                    </div>
+                  </div>
+                  <div class="col-md-4">
+                    <div class="form-check co-card p-3 border rounded-2 hover-lift">
+                      <input class="form-check-input" type="checkbox" value="6" id="co6" name="cos">
+                      <label class="form-check-label fw-medium w-100" for="co6">
+                        <span class="badge bg-primary me-2">CO6</span>
+                        Course Outcome 6
+                      </label>
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- Select All COs -->
+                <div class="mt-3">
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="selectAllCOs">
+                    <label class="form-check-label fw-medium" for="selectAllCOs">
+                      Select All Course Outcomes
+                    </label>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Submit Button -->
+              <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4 pt-3 border-top">
+                <button type="submit" id="submitBtn" class="btn btn-primary btn-lg px-4 py-2 animate-button">
+                  <i class="fas fa-plus-circle me-2"></i>Add Question
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Existing Questions Panel -->
+      <div class="col-lg-4">
+        <div class="page-header mb-4">
+          <h2 class="h4 fw-bold text-primary mb-2">Question Bank</h2>
+          <p class="text-muted small">Your existing questions</p>
+        </div>
+        
+        <!-- Quick Stats -->
+        <div class="card bg-light border-0 mb-4">
+          <div class="card-body py-3">
+            <div class="row text-center">
+              <div class="col-4">
+                <div class="h5 mb-0 text-primary">{{ questions.count }}</div>
+                <small class="text-muted">Total</small>
+              </div>
+              <div class="col-4">
+                <div class="h5 mb-0 text-success">
+                  {{ questions|length }}
+                </div>
+                <small class="text-muted">Visible</small>
+              </div>
+              <div class="col-4">
+                <div class="h5 mb-0 text-info">
+                  {% with ten_mark_questions=questions|length %}
+                    {{ ten_mark_questions }}
+                  {% endwith %}
+                </div>
+                <small class="text-muted">10-Mark</small>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="card shadow border-0 rounded-3">
+          <div class="card-header bg-light d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+              <i class="fas fa-database me-2"></i>
+              Question Library
+            </h5>
+            <span class="badge bg-primary">{{ questions.count }}</span>
+          </div>
+          <div class="card-body p-0">
+            <div class="questions-scrollable" style="max-height: 500px; overflow-y: auto;">
+              {% for question in questions %}
+              <div class="border-bottom p-3 question-item hover-lift">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                  <h6 class="fw-semibold mb-1 text-truncate" title="{{ question.question }}">
+                    {{ question.question|truncatewords:8 }}
+                  </h6>
+                  <span class="badge {% if question.marks == 2 %}bg-success{% elif question.marks == 5 %}bg-warning{% elif question.marks == 10 %}bg-danger{% else %}bg-secondary{% endif %} small">
+                    {{ question.marks }} marks
+                  </span>
+                </div>
+                <p class="small text-muted mb-1">
+                  <i class="fas fa-user me-1"></i>By: {{ question.user.username }}
+                </p>
+                <p class="small text-muted mb-1">
+                  <i class="fas fa-book me-1"></i>{{ question.subject.name }}
+                </p>
+                <p class="small text-muted mb-2">
+                  <i class="fas fa-tag me-1"></i>{{ question.topic.name }}
+                </p>
+                <div class="d-flex justify-content-between align-items-center">
+                  <span class="badge bg-light text-dark small">
+                    Diff: {{ question.difficulty }}/5
+                  </span>
+                  <small class="text-muted">
+                    {{ question.created_at|date:"M d, Y"|default:"Recently" }}
+                  </small>
+                </div>
+              </div>
+              {% empty %}
+              <div class="p-4 text-center">
+                <i class="fas fa-inbox display-4 text-muted mb-3"></i>
+                <p class="text-muted mb-2">No questions available yet.</p>
+                <p class="small text-muted">Add your first question to get started!</p>
+                <div class="mt-3">
+                  <div class="alert alert-info small">
+                    <strong>Tip:</strong> Add questions with different mark values (2, 5, 10) for better paper generation.
+                  </div>
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+          {% if questions %}
+          <div class="card-footer bg-light">
+            <div class="row text-center small">
+              <div class="col-4">
+                <span class="badge bg-success">2M</span>
+                <small class="text-muted">{{ questions|length }}</small>
+              </div>
+              <div class="col-4">
+                <span class="badge bg-warning text-dark">5M</span>
+                <small class="text-muted">{{ questions|length }}</small>
+              </div>
+              <div class="col-4">
+                <span class="badge bg-danger">10M</span>
+                <small class="text-muted">{{ questions|length }}</small>
+              </div>
+            </div>
+          </div>
+          {% endif %}
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="mt-4">
+          <div class="card border-0 bg-light">
+            <div class="card-body">
+              <h6 class="fw-semibold mb-3">Quick Actions</h6>
+              <div class="d-grid gap-2">
+                <a href="{% url 'index' %}" class="btn btn-outline-primary btn-sm">
+                  <i class="fas fa-file-alt me-2"></i>Generate Paper
+                </a>
+                <button class="btn btn-outline-info btn-sm" onclick="addSampleQuestions()">
+                  <i class="fas fa-magic me-2"></i>Add Sample Questions
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <style>
+    /* Custom styling for a professional look */
+    .animate-fade-in {
+      animation: fadeIn 0.6s ease-out;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .animate-button {
+      transition: all 0.3s ease;
+    }
+    
+    .animate-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(0, 123, 255, 0.3);
+    }
+    
+    .hover-lift {
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+    
+    .hover-lift:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      background-color: #f8f9fa;
+    }
+    
+    .co-card, .question-item {
+      cursor: pointer;
+    }
+    
+    .form-check-input:checked ~ .form-check-label {
+      color: #198754;
+      font-weight: 600;
+    }
+    
+    .page-header {
+      animation: slideInFromLeft 0.7s ease-out;
+    }
+    
+    @keyframes slideInFromLeft {
+      from { opacity: 0; transform: translateX(-30px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+    
+    /* Toast Animation */
+    .toast {
+      animation: slideInRight 0.5s ease-out, fadeIn 0.5s ease-out;
+    }
+    
+    @keyframes slideInRight {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+    
+    /* Success Animation */
+    .success-animation {
+      animation: successPulse 0.6s ease-in-out;
+    }
+    
+    @keyframes successPulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+      100% { transform: scale(1); }
+    }
+    
+    /* Scrollable area styling */
+    .questions-scrollable {
+      scrollbar-width: thin;
+      scrollbar-color: #dee2e6 #f8f9fa;
+    }
+    
+    .questions-scrollable::-webkit-scrollbar {
+      width: 6px;
+    }
+    
+    .questions-scrollable::-webkit-scrollbar-track {
+      background: #f8f9fa;
+    }
+    
+    .questions-scrollable::-webkit-scrollbar-thumb {
+      background: #dee2e6;
+      border-radius: 3px;
+    }
+    
+    .questions-scrollable::-webkit-scrollbar-thumb:hover {
+      background: #adb5bd;
+    }
+
+    /* Mark-specific badges */
+    .badge.bg-success { background-color: #28a745 !important; }
+    .badge.bg-warning { background-color: #ffc107 !important; color: #000 !important; }
+    .badge.bg-danger { background-color: #dc3545 !important; }
+    .badge.bg-secondary { background-color: #6c757d !important; }
+    
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+      .card-body {
+        padding: 1.5rem;
+      }
+      
+      .display-5 {
+        font-size: 2rem;
+      }
+      
+      .co-card {
+        margin-bottom: 0.5rem;
+      }
+      
+      .toast-container {
+        padding: 1rem !important;
+      }
+    }
+  </style>
+
+  <script>
+    // Enhanced form handling with proper validation
+    document.addEventListener('DOMContentLoaded', function() {
+      const form = document.getElementById('questionForm');
+      const submitBtn = document.getElementById('submitBtn');
+      const originalButtonText = submitBtn.innerHTML;
+      
+      // Initialize all toasts when page loads
+      const toastElList = document.querySelectorAll('.toast');
+      const toastList = [...toastElList].map(toastEl => {
+        const toast = new bootstrap.Toast(toastEl);
+        toast.show();
+        return toast;
+      });
+      
+      // Select All COs functionality
+      const selectAllCOs = document.getElementById('selectAllCOs');
+      const coCheckboxes = document.querySelectorAll('input[name="cos"]');
+      
+      if (selectAllCOs) {
+        selectAllCOs.addEventListener('change', function() {
+          coCheckboxes.forEach(checkbox => {
+            checkbox.checked = this.checked;
+          });
+        });
+      }
+      
+      // Form submission handler
+      form.addEventListener('submit', function(e) {
+        // Prevent default submission for validation
+        e.preventDefault();
+        
+        // Basic validation
+        const questionText = document.getElementById('questionText').value.trim();
+        const subject = document.getElementById('subjectInput').value.trim();
+        const topic = document.getElementById('topicInput').value.trim();
+        const marks = document.getElementById('marksInput').value;
+        
+        if (!questionText) {
+          showAlert('Please enter a question text.', 'warning');
+          document.getElementById('questionText').focus();
+          return;
+        }
+        
+        if (!subject) {
+          showAlert('Please enter a subject.', 'warning');
+          document.getElementById('subjectInput').focus();
+          return;
+        }
+        
+        if (!topic) {
+          showAlert('Please enter a topic.', 'warning');
+          document.getElementById('topicInput').focus();
+          return;
+        }
+        
+        if (!marks) {
+          showAlert('Please select marks value.', 'warning');
+          document.getElementById('marksInput').focus();
+          return;
+        }
+        
+        // Show loading state
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Adding Question...';
+        submitBtn.disabled = true;
+        
+        // Submit the form after a brief delay to show the loading state
+        setTimeout(() => {
+          form.submit();
+        }, 500);
+      });
+      
+      // Alert function
+      function showAlert(message, type) {
+        // Remove existing alerts
+        const existingAlert = document.querySelector('.custom-alert');
+        if (existingAlert) {
+          existingAlert.remove();
+        }
+        
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type} alert-dismissible fade show custom-alert mt-3`;
+        alertDiv.innerHTML = `
+          ${message}
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        `;
+        
+        form.insertBefore(alertDiv, form.querySelector('.d-grid'));
+        
+        // Scroll to alert
+        alertDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      
+      // Add click functionality to CO cards
+      document.querySelectorAll('.co-card').forEach(card => {
+        card.addEventListener('click', function(e) {
+          if (e.target.type !== 'checkbox') {
+            const checkbox = this.querySelector('input[type="checkbox"]');
+            checkbox.checked = !checkbox.checked;
+            checkbox.dispatchEvent(new Event('change'));
+          }
+        });
+      });
+      
+      // Add sample questions function
+      window.addSampleQuestions = function() {
+        const sampleQuestions = [
+          {
+            question: "Explain the fundamental theorem of calculus and provide a detailed proof with examples of its applications in real-world problems.",
+            subject: "Mathematics",
+            topic: "Calculus",
+            marks: "10",
+            difficulty: "4",
+            answer: "The fundamental theorem of calculus establishes the relationship between differentiation and integration..."
+          },
+          {
+            question: "Discuss the various methods of solving differential equations and compare their advantages and limitations.",
+            subject: "Mathematics", 
+            topic: "Differential Equations",
+            marks: "5",
+            difficulty: "3",
+            answer: "Differential equations can be solved using several methods including separation of variables, integrating factors..."
+          },
+          {
+            question: "Define and explain the concept of limits in calculus with suitable examples.",
+            subject: "Mathematics",
+            topic: "Calculus", 
+            marks: "2",
+            difficulty: "2",
+            answer: "Limits form the foundation of calculus, defining the behavior of functions as inputs approach certain values..."
+          }
+        ];
+
+        // Fill form with first sample question
+        const sample = sampleQuestions[0];
+        document.getElementById('questionText').value = sample.question;
+        document.getElementById('subjectInput').value = sample.subject;
+        document.getElementById('topicInput').value = sample.topic;
+        document.getElementById('marksInput').value = sample.marks;
+        document.getElementById('difficultySelect').value = sample.difficulty;
+        document.getElementById('answerText').value = sample.answer;
+
+        showAlert('Sample question loaded! Feel free to modify it before submitting.', 'info');
+      };
+    });
+  </script>
+{% endblock %}

@@ -1,0 +1,288 @@
+{% extends "layout.html" %}
+
+{% block body %}
+    {% if user.is_authenticated %}
+        {% if message %}
+            <div class="alert alert-info alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endif %}
+        
+        <div class="container py-4">
+            <div class="row justify-content-center">
+                <div class="col-lg-10">
+                    <div class="page-header mb-4">
+                        <h1 class="display-5 fw-bold text-primary mb-3">Create New Question Paper</h1>
+                        <p class="lead text-muted">Fill in the details below to generate a customized question paper</p>
+                    </div>
+                    
+                    <div class="card shadow-lg border-0 rounded-3 animate-fade-in">
+                        <div class="card-body p-4 p-md-5">
+                            <form id="paperForm" action="{% url 'papergenerator' %}" method="post">
+                                {% csrf_token %}
+                                
+                                <!-- Heading Section -->
+                                <div class="mb-4">
+                                    <label for="formGroupExampleInput" class="form-label fw-semibold fs-5 text-dark">
+                                        <i class="bi bi-type-h1 me-2"></i>Paper Heading
+                                    </label>
+                                    <input type="text" class="form-control form-control-lg border-2" 
+                                           id="formGroupExampleInput" placeholder="Enter the paper heading" 
+                                           name="heading" required>
+                                    <div class="form-text">This will be the main title of your question paper</div>
+                                </div>
+                                
+                                <!-- Extra Details Section -->
+                                <div class="mb-4">
+                                    <label for="exampleFormControlTextarea1" class="form-label fw-semibold fs-5 text-dark">
+                                        <i class="bi bi-card-text me-2"></i>Additional Details
+                                    </label>
+                                    <textarea class="form-control border-2" id="exampleFormControlTextarea1" 
+                                              rows="3" placeholder="Enter any additional instructions or details" 
+                                              name="extradetails" required></textarea>
+                                    <div class="form-text">Include instructions, guidelines, or any special notes for students</div>
+                                </div>
+                                
+                                <!-- Configuration Options -->
+                                <div class="row g-4 mb-4">
+                                    <!-- Paper Format -->
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-semibold fs-5 text-dark">
+                                            <i class="bi bi-layout-text-sidebar me-2"></i>Paper Format
+                                        </label>
+                                        <select class="form-select border-2 py-2" name="ptype" id="ptype">
+                                            <option value=1>Unit Test Pattern - 20 Marks</option>
+                                            <option value=2>Semester Pattern - 80 Marks</option>
+                                        </select>
+                                        <div class="form-text">Select the appropriate examination pattern</div>
+                                    </div>
+                                    
+                                    <!-- Subject Selection -->
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-semibold fs-5 text-dark">
+                                            <i class="bi bi-journal-bookmark me-2"></i>Subject
+                                        </label>
+                                        <select class="form-select border-2 py-2" name="subsel" id="subsel">
+                                            {% for subject in subjects %}
+                                                <option value="{{subject.id}}">{{subject.name}}</option>
+                                            {% endfor %}
+                                        </select>
+                                        <div class="form-text">Choose the subject for your question paper</div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Submit Button -->
+                                <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                                    <button type="submit" id="submitBtn" class="btn btn-primary btn-lg px-4 py-2 animate-button">
+                                        <i class="bi bi-arrow-right-circle me-2"></i>Continue to Next Step
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <style>
+            /* Custom styling for a professional look */
+            .animate-fade-in {
+                animation: fadeIn 0.6s ease-out;
+            }
+            
+            @keyframes fadeIn {
+                from { opacity: 0; transform: translateY(20px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+            
+            .animate-button {
+                transition: all 0.3s ease;
+            }
+            
+            .animate-button:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 5px 15px rgba(0, 123, 255, 0.3);
+            }
+            
+            .card {
+                transition: transform 0.3s ease, box-shadow 0.3s ease;
+            }
+            
+            .card:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            }
+            
+            .form-control, .form-select {
+                transition: border-color 0.3s ease, box-shadow 0.3s ease;
+            }
+            
+            .form-control:focus, .form-select:focus {
+                border-color: #0d6efd;
+                box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.15);
+            }
+            
+            .page-header {
+                animation: slideInFromLeft 0.7s ease-out;
+            }
+            
+            @keyframes slideInFromLeft {
+                from { opacity: 0; transform: translateX(-30px); }
+                to { opacity: 1; transform: translateX(0); }
+            }
+            
+            /* Form validation styles */
+            .was-validated .form-control:valid,
+            .was-validated .form-select:valid {
+                border-color: #198754;
+                background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3e%3cpath fill='%23198754' d='M2.3 6.73L.6 4.53c-.4-1.04.46-1.4 1.1-.8l1.1 1.4 3.4-3.8c.6-.63 1.6-.27 1.2.7l-4 4.6c-.43.5-.8.4-1.1.1z'/%3e%3c/svg%3e");
+                background-repeat: no-repeat;
+                background-position: right calc(0.375em + 0.1875rem) center;
+                background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+            }
+            
+            .was-validated .form-control:invalid,
+            .was-validated .form-select:invalid {
+                border-color: #dc3545;
+                background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' width='12' height='12' fill='none' stroke='%23dc3545'%3e%3ccircle cx='6' cy='6' r='4.5'/%3e%3cpath d='M5.8 3.6h.4L6 6.5z'/%3e%3ccircle cx='6' cy='8.2' r='.6' fill='%23dc3545' stroke='none'/%3e%3c/svg%3e");
+                background-repeat: no-repeat;
+                background-position: right calc(0.375em + 0.1875rem) center;
+                background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+            }
+            
+            .invalid-feedback {
+                display: none;
+                width: 100%;
+                margin-top: 0.25rem;
+                font-size: 0.875em;
+                color: #dc3545;
+            }
+            
+            .was-validated .form-control:invalid ~ .invalid-feedback,
+            .was-validated .form-select:invalid ~ .invalid-feedback {
+                display: block;
+            }
+            
+            /* Responsive adjustments */
+            @media (max-width: 768px) {
+                .card-body {
+                    padding: 1.5rem;
+                }
+                
+                .display-5 {
+                    font-size: 2rem;
+                }
+            }
+        </style>
+        
+        <script>
+            // Enhanced form handling with proper validation
+            document.addEventListener('DOMContentLoaded', function() {
+                const form = document.getElementById('paperForm');
+                const submitButton = document.getElementById('submitBtn');
+                const originalButtonText = submitButton.innerHTML;
+                
+                // Add real-time validation
+                const inputs = form.querySelectorAll('input, select, textarea');
+                inputs.forEach(input => {
+                    input.addEventListener('blur', function() {
+                        validateField(this);
+                    });
+                    
+                    input.addEventListener('input', function() {
+                        if (this.classList.contains('is-invalid')) {
+                            validateField(this);
+                        }
+                    });
+                });
+                
+                // Form submission handler
+                form.addEventListener('submit', function(e) {
+                    // Prevent default submission for validation
+                    e.preventDefault();
+                    
+                    // Validate all fields
+                    let isValid = true;
+                    inputs.forEach(input => {
+                        if (!validateField(input)) {
+                            isValid = false;
+                        }
+                    });
+                    
+                    if (isValid) {
+                        // Show loading state
+                        submitButton.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Processing...';
+                        submitButton.disabled = true;
+                        
+                        // Submit the form after a brief delay to show the loading state
+                        setTimeout(() => {
+                            form.submit();
+                        }, 500);
+                    } else {
+                        // Scroll to first error
+                        const firstInvalid = form.querySelector('.is-invalid');
+                        if (firstInvalid) {
+                            firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            firstInvalid.focus();
+                        }
+                    }
+                });
+                
+                // Field validation function
+                function validateField(field) {
+                    const value = field.value.trim();
+                    let isValid = true;
+                    
+                    // Clear previous validation states
+                    field.classList.remove('is-valid', 'is-invalid');
+                    
+                    // Required field validation
+                    if (field.hasAttribute('required') && value === '') {
+                        field.classList.add('is-invalid');
+                        isValid = false;
+                    } else if (field.hasAttribute('required') && value !== '') {
+                        field.classList.add('is-valid');
+                    }
+                    
+                    // Additional validation for specific fields
+                    if (field.name === 'heading' && value.length > 0 && value.length < 3) {
+                        field.classList.add('is-invalid');
+                        isValid = false;
+                    }
+                    
+                    return isValid;
+                }
+                
+                // Add animation to form elements on focus
+                const formControls = document.querySelectorAll('.form-control, .form-select');
+                
+                formControls.forEach(control => {
+                    control.addEventListener('focus', function() {
+                        this.parentElement.style.transform = 'scale(1.02)';
+                        this.parentElement.style.transition = 'transform 0.2s ease';
+                    });
+                    
+                    control.addEventListener('blur', function() {
+                        this.parentElement.style.transform = 'scale(1)';
+                    });
+                });
+            });
+        </script>
+    {% else %}
+        <div class="container py-5">
+            <div class="row justify-content-center">
+                <div class="col-md-8 text-center">
+                    <div class="card shadow border-0 rounded-3">
+                        <div class="card-body py-5">
+                            <i class="bi bi-exclamation-circle display-1 text-warning mb-3"></i>
+                            <h2 class="h3 text-dark mb-3">Authentication Required</h2>
+                            <p class="text-muted mb-4">Please log in to access the question paper generator</p>
+                            <a href="{% url 'login' %}" class="btn btn-primary btn-lg">Login to Continue</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+{% endblock %}

@@ -1,0 +1,400 @@
+{% extends "layout.html" %}
+
+{% block body %}
+  {% if user.is_authenticated %}
+    {% if message %}
+      <div class="alert alert-info alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+    {% endif %}
+
+    <div class="container py-4">
+      <div class="row justify-content-center">
+        <div class="col-lg-10">
+          <div class="page-header mb-4">
+            <h1 class="display-5 fw-bold text-primary mb-3">Configure Question Paper</h1>
+            <p class="lead text-muted">Review your settings and select topics for question generation</p>
+          </div>
+          
+          <div class="card shadow-lg border-0 rounded-3 animate-fade-in">
+            <div class="card-body p-4 p-md-5">
+              <form id="paperConfigForm" action="{% url 'papergen2' %}" method="post">
+                {% csrf_token %}
+                
+                <!-- Review Section -->
+                <div class="mb-4">
+                  <h3 class="fw-semibold text-dark mb-3 border-bottom pb-2">
+                    <i class="bi bi-check-circle me-2 text-success"></i>Paper Configuration Review
+                  </h3>
+                  
+                  <div class="row g-3">
+                    <div class="col-md-6">
+                      <label class="form-label fw-medium text-secondary">Paper Heading</label>
+                      <div class="p-3 bg-light rounded-2 border">
+                        <strong>{{ heading }}</strong>
+                      </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                      <label class="form-label fw-medium text-secondary">Subject</label>
+                      <div class="p-3 bg-light rounded-2 border">
+                        <strong>{{ subsel }}</strong>
+                      </div>
+                    </div>
+                    
+                    <div class="col-12">
+                      <label class="form-label fw-medium text-secondary">Additional Details</label>
+                      <div class="p-3 bg-light rounded-2 border">
+                        {{ extradetails }}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <!-- Hidden fields -->
+                  <input type="hidden" name="heading" value="{{ heading }}">
+                  <input type="hidden" name="marksboxcheck" value="{{ marksboxcheck }}">
+                  <input type="hidden" name="ptype" value="{{ ptype }}">
+                </div>
+
+                <!-- Topics Selection -->
+                <div class="mb-4">
+                  <h3 class="fw-semibold text-dark mb-3 border-bottom pb-2">
+                    <i class="bi bi-list-task me-2 text-primary"></i>Topics to Include
+                  </h3>
+                  <p class="text-muted mb-3">Select the topics you want to include in your question paper</p>
+                  
+                  <div class="topics-container">
+                    <div class="row g-2">
+                      {% for topic in topics %}
+                      <div class="col-md-6 col-lg-4">
+                        <div class="form-check topic-card p-3 border rounded-2 hover-lift">
+                          <input class="form-check-input" type="checkbox" value="{{ topic.id }}" 
+                                 id="topic{{ topic.id }}" name="topics" checked>
+                          <label class="form-check-label fw-medium w-100" for="topic{{ topic.id }}">
+                            {{ topic.name }}
+                          </label>
+                        </div>
+                      </div>
+                      {% empty %}
+                      <div class="col-12">
+                        <div class="alert alert-warning">
+                          <i class="bi bi-exclamation-triangle me-2"></i>
+                          No topics available for this subject.
+                        </div>
+                      </div>
+                      {% endfor %}
+                    </div>
+                  </div>
+                  
+                  <!-- Select All Topics -->
+                  <div class="mt-3">
+                    <div class="form-check">
+                      <input class="form-check-input" type="checkbox" id="selectAllTopics">
+                      <label class="form-check-label fw-medium" for="selectAllTopics">
+                        Select All Topics
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- CO's Mapping -->
+                <div class="mb-4">
+                  <h3 class="fw-semibold text-dark mb-3 border-bottom pb-2">
+                    <i class="bi bi-diagram-3 me-2 text-info"></i>Course Outcomes Mapping
+                  </h3>
+                  <p class="text-muted mb-3">Select the Course Outcomes to map with your question paper</p>
+                  
+                  <div class="cos-container">
+                    <div class="row g-3">
+                      <div class="col-md-4">
+                        <div class="form-check co-card p-3 border rounded-2 hover-lift">
+                          <input class="form-check-input" type="checkbox" value="1" id="co1" name="cos" checked>
+                          <label class="form-check-label fw-medium w-100" for="co1">
+                            <span class="badge bg-primary me-2">CO1</span>
+                            Course Outcome 1
+                          </label>
+                        </div>
+                      </div>
+                      <div class="col-md-4">
+                        <div class="form-check co-card p-3 border rounded-2 hover-lift">
+                          <input class="form-check-input" type="checkbox" value="2" id="co2" name="cos" checked>
+                          <label class="form-check-label fw-medium w-100" for="co2">
+                            <span class="badge bg-primary me-2">CO2</span>
+                            Course Outcome 2
+                          </label>
+                        </div>
+                      </div>
+                      <div class="col-md-4">
+                        <div class="form-check co-card p-3 border rounded-2 hover-lift">
+                          <input class="form-check-input" type="checkbox" value="3" id="co3" name="cos" checked>
+                          <label class="form-check-label fw-medium w-100" for="co3">
+                            <span class="badge bg-primary me-2">CO3</span>
+                            Course Outcome 3
+                          </label>
+                        </div>
+                      </div>
+                      <div class="col-md-4">
+                        <div class="form-check co-card p-3 border rounded-2 hover-lift">
+                          <input class="form-check-input" type="checkbox" value="4" id="co4" name="cos" checked>
+                          <label class="form-check-label fw-medium w-100" for="co4">
+                            <span class="badge bg-primary me-2">CO4</span>
+                            Course Outcome 4
+                          </label>
+                        </div>
+                      </div>
+                      <div class="col-md-4">
+                        <div class="form-check co-card p-3 border rounded-2 hover-lift">
+                          <input class="form-check-input" type="checkbox" value="5" id="co5" name="cos" checked>
+                          <label class="form-check-label fw-medium w-100" for="co5">
+                            <span class="badge bg-primary me-2">CO5</span>
+                            Course Outcome 5
+                          </label>
+                        </div>
+                      </div>
+                      <div class="col-md-4">
+                        <div class="form-check co-card p-3 border rounded-2 hover-lift">
+                          <input class="form-check-input" type="checkbox" value="6" id="co6" name="cos" checked>
+                          <label class="form-check-label fw-medium w-100" for="co6">
+                            <span class="badge bg-primary me-2">CO6</span>
+                            Course Outcome 6
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <!-- Select All COs -->
+                  <div class="mt-3">
+                    <div class="form-check">
+                      <input class="form-check-input" type="checkbox" id="selectAllCOs">
+                      <label class="form-check-label fw-medium" for="selectAllCOs">
+                        Select All Course Outcomes
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Submit Button -->
+                <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4 pt-3 border-top">
+                  <button type="submit" id="generateBtn" class="btn btn-success btn-lg px-4 py-2 animate-button">
+                    <i class="bi bi-gear me-2"></i>Generate Question Paper
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <style>
+      /* Custom styling for a professional look */
+      .animate-fade-in {
+        animation: fadeIn 0.6s ease-out;
+      }
+      
+      @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      
+      .animate-button {
+        transition: all 0.3s ease;
+      }
+      
+      .animate-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(40, 167, 69, 0.3);
+      }
+      
+      .hover-lift {
+        transition: all 0.2s ease;
+      }
+      
+      .hover-lift:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      }
+      
+      .topic-card, .co-card {
+        cursor: pointer;
+      }
+      
+      .topic-card:hover, .co-card:hover {
+        background-color: #f8f9fa;
+      }
+      
+      .form-check-input:checked ~ .form-check-label {
+        color: #198754;
+        font-weight: 600;
+      }
+      
+      .page-header {
+        animation: slideInFromLeft 0.7s ease-out;
+      }
+      
+      @keyframes slideInFromLeft {
+        from { opacity: 0; transform: translateX(-30px); }
+        to { opacity: 1; transform: translateX(0); }
+      }
+      
+      /* Checkbox styling */
+      .form-check-input {
+        width: 1.2em;
+        height: 1.2em;
+        margin-top: 0.15em;
+      }
+      
+      .form-check-input:checked {
+        background-color: #198754;
+        border-color: #198754;
+      }
+      
+      /* Responsive adjustments */
+      @media (max-width: 768px) {
+        .card-body {
+          padding: 1.5rem;
+        }
+        
+        .display-5 {
+          font-size: 2rem;
+        }
+        
+        .cos-container .col-md-4,
+        .topics-container .col-md-6 {
+          margin-bottom: 0.5rem;
+        }
+      }
+    </style>
+
+    <script>
+      // Enhanced form handling with proper validation
+      document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('paperConfigForm');
+        const generateBtn = document.getElementById('generateBtn');
+        const originalButtonText = generateBtn.innerHTML;
+        
+        // Select All Topics functionality
+        const selectAllTopics = document.getElementById('selectAllTopics');
+        const topicCheckboxes = document.querySelectorAll('input[name="topics"]');
+        
+        if (selectAllTopics) {
+          selectAllTopics.addEventListener('change', function() {
+            topicCheckboxes.forEach(checkbox => {
+              checkbox.checked = this.checked;
+            });
+          });
+          
+          // Update select all when individual checkboxes change
+          topicCheckboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+              const allChecked = Array.from(topicCheckboxes).every(cb => cb.checked);
+              const someChecked = Array.from(topicCheckboxes).some(cb => cb.checked);
+              
+              if (allChecked) {
+                selectAllTopics.checked = true;
+                selectAllTopics.indeterminate = false;
+              } else if (someChecked) {
+                selectAllTopics.checked = false;
+                selectAllTopics.indeterminate = true;
+              } else {
+                selectAllTopics.checked = false;
+                selectAllTopics.indeterminate = false;
+              }
+            });
+          });
+        }
+        
+        // Select All COs functionality
+        const selectAllCOs = document.getElementById('selectAllCOs');
+        const coCheckboxes = document.querySelectorAll('input[name="cos"]');
+        
+        if (selectAllCOs) {
+          selectAllCOs.addEventListener('change', function() {
+            coCheckboxes.forEach(checkbox => {
+              checkbox.checked = this.checked;
+            });
+          });
+        }
+        
+        // Form submission handler
+        form.addEventListener('submit', function(e) {
+          // Prevent default submission for validation
+          e.preventDefault();
+          
+          // Validate that at least one topic is selected
+          const topicsSelected = Array.from(topicCheckboxes).some(cb => cb.checked);
+          const cosSelected = Array.from(coCheckboxes).some(cb => cb.checked);
+          
+          if (!topicsSelected) {
+            showAlert('Please select at least one topic to include in your question paper.', 'warning');
+            return;
+          }
+          
+          if (!cosSelected) {
+            showAlert('Please select at least one Course Outcome to map with your question paper.', 'warning');
+            return;
+          }
+          
+          // Show loading state
+          generateBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Generating...';
+          generateBtn.disabled = true;
+          
+          // Submit the form after a brief delay to show the loading state
+          setTimeout(() => {
+            form.submit();
+          }, 500);
+        });
+        
+        // Alert function
+        function showAlert(message, type) {
+          // Remove existing alerts
+          const existingAlert = document.querySelector('.custom-alert');
+          if (existingAlert) {
+            existingAlert.remove();
+          }
+          
+          const alertDiv = document.createElement('div');
+          alertDiv.className = `alert alert-${type} alert-dismissible fade show custom-alert mt-3`;
+          alertDiv.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          `;
+          
+          form.insertBefore(alertDiv, form.querySelector('.d-grid'));
+          
+          // Scroll to alert
+          alertDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        
+        // Add click functionality to entire card
+        document.querySelectorAll('.topic-card, .co-card').forEach(card => {
+          card.addEventListener('click', function(e) {
+            if (e.target.type !== 'checkbox') {
+              const checkbox = this.querySelector('input[type="checkbox"]');
+              checkbox.checked = !checkbox.checked;
+              checkbox.dispatchEvent(new Event('change'));
+            }
+          });
+        });
+      });
+    </script>
+
+  {% else %}
+    <div class="container py-5">
+      <div class="row justify-content-center">
+        <div class="col-md-8 text-center">
+          <div class="card shadow border-0 rounded-3">
+            <div class="card-body py-5">
+              <i class="bi bi-exclamation-circle display-1 text-warning mb-3"></i>
+              <h2 class="h3 text-dark mb-3">Authentication Required</h2>
+              <p class="text-muted mb-4">Please log in to access the question paper generator</p>
+              <a href="{% url 'login' %}" class="btn btn-primary btn-lg">Login to Continue</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  {% endif %}
+{% endblock %}

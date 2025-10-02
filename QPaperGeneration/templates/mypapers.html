@@ -1,0 +1,120 @@
+{% extends "layout.html" %}
+
+{% block body %}
+{% if message %}
+<div class="alert alert-info text-center mt-3">{{ message }}</div>
+{% endif %}
+
+<div class="container py-4">
+    <h3 class="mb-4 fw-bold">Create a New Paper</h3>
+
+    <!-- Main Form Card -->
+    <div class="card shadow-sm mb-4" style="border-radius: 15px; animation: fadeIn 0.8s ease;">
+        <div class="card-body">
+            <form action="{% url 'myquestions' %}" method="post">
+                {% csrf_token %}
+
+                <!-- Heading Input -->
+                <div class="mb-3">
+                    <label for="InputQuestion" class="form-label fw-semibold">Heading</label>
+                    <input type="text" name="question" class="form-control form-control-lg" id="InputQuestion" placeholder="Enter Header Text" required>
+                </div>
+
+                <!-- Extra Details -->
+                <div class="mb-3">
+                    <label for="extraDetails" class="form-label fw-semibold">Extra Details</label>
+                    <textarea name="extradetails" class="form-control" id="extraDetails" rows="3" placeholder="Extra Details Below the Header"></textarea>
+                </div>
+
+                <!-- Marks Box -->
+                <div class="form-check mb-3">
+                    <input id="marksboxcheck" type="checkbox" class="form-check-input">
+                    <label class="form-check-label" for="marksboxcheck">Add Marks Box (for checking purposes)</label>
+                </div>
+
+                <!-- Buttons -->
+                <div class="d-flex gap-3 mb-3">
+                    <button type="button" id="addqbtn" class="btn btn-outline-primary flex-grow-1">Add Questions</button>
+                    <button type="submit" class="btn btn-primary flex-grow-1">Submit</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Hidden Floating Block for Existing Questions -->
+    <div id="addqbox" class="card shadow-lg p-3" style="display:none; position: fixed; top: 10%; right: 5%; width: 360px; z-index: 1050; border-radius: 15px; animation: slideIn 0.5s ease;">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <strong>Add Existing Questions</strong>
+            <button aria-label="Close" id="remqbtn" class="btn-close"></button>
+        </div>
+
+        <!-- Search Box -->
+        <form role="search" class="mb-3">
+            <input id="search-box" type="search" class="form-control" placeholder="Search..." aria-label="Search">
+        </form>
+
+        <!-- Question List -->
+        <div class="overflow-auto" style="max-height: 300px;">
+            {% if questions %}
+                {% for question in questions %}
+                <div class="card mb-2 p-2 shadow-sm">
+                    {{ question.question }}
+                </div>
+                {% endfor %}
+            {% else %}
+                <p class="text-muted">No questions available.</p>
+            {% endif %}
+        </div>
+
+        <a href="{% url 'myquestions' %}" class="link-primary mt-3 d-block">Or add new questions to database</a>
+    </div>
+</div>
+
+<style>
+/* Card fade-in */
+@keyframes fadeIn {
+    0% { opacity: 0; transform: translateY(-20px); }
+    100% { opacity: 1; transform: translateY(0); }
+}
+
+/* Slide-in animation for floating block */
+@keyframes slideIn {
+    0% { opacity: 0; transform: translateX(50px); }
+    100% { opacity: 1; transform: translateX(0); }
+}
+
+/* Smooth button hover */
+.btn-primary, .btn-outline-primary {
+    transition: all 0.3s ease;
+}
+.btn-primary:hover, .btn-outline-primary:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+}
+.btn-outline-primary:hover {
+    background-color: rgba(0,123,255,0.1);
+}
+
+/* Input focus effect */
+.form-control:focus {
+    box-shadow: 0 0 0 0.2rem rgba(0,123,255,0.25);
+    border-color: #0d6efd;
+}
+
+/* Card hover lift */
+.card:hover {
+    transform: translateY(-3px);
+    transition: transform 0.2s ease;
+}
+</style>
+
+<script>
+    // Show/hide floating block
+    document.getElementById('addqbtn').addEventListener('click', function() {
+        document.getElementById('addqbox').style.display = 'block';
+    });
+    document.getElementById('remqbtn').addEventListener('click', function() {
+        document.getElementById('addqbox').style.display = 'none';
+    });
+</script>
+{% endblock %}
