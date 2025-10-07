@@ -1,0 +1,514 @@
+<!-- QGen/QPaperGeneration/templates/student_dashboard.html -->
+{% extends "layout.html" %}
+
+{% block title %}Student Dashboard{% endblock %}
+
+{% block body %}
+  <!-- Success Message Toast -->
+  <div class="toast-container position-fixed top-0 end-0 p-3">
+    {% for message in messages %}
+      <div class="toast align-items-center text-white bg-{% if message.tags == 'success' %}success{% else %}danger{% endif %} border-0" 
+           role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="5000">
+        <div class="d-flex">
+          <div class="toast-body">
+            <i class="fas fa-{% if message.tags == 'success' %}check-circle{% else %}exclamation-circle{% endif %} me-2"></i>
+            {{ message }}
+          </div>
+          <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+
+  <div class="container-fluid py-4">
+    <div class="row">
+      <!-- Sidebar Navigation -->
+      <div class="col-md-3 col-lg-2 d-md-block bg-light sidebar">
+        <div class="position-sticky pt-3">
+          <div class="d-flex justify-content-between align-items-center mb-4">
+            <h5 class="text-primary">
+              <i class="fas fa-user-graduate me-2"></i>Student Portal
+            </h5>
+          </div>
+          
+          <ul class="nav flex-column sidebar-nav">
+            <li class="nav-item">
+              <a class="nav-link active sidebar-link" href="#">
+                <i class="fas fa-tachometer-alt me-2"></i>
+                <span class="link-text">Dashboard</span>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link sidebar-link" href="#available-papers">
+                <i class="fas fa-file-alt me-2"></i>
+                <span class="link-text">Available Papers</span>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link sidebar-link" href="{% url 'student_generated_papers' %}">
+                <i class="fas fa-history me-2"></i>
+                <span class="link-text">Generated Papers</span>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link sidebar-link" href="{% url 'student_generate_custom_paper' %}">
+                <i class="fas fa-plus-circle me-2"></i>
+                <span class="link-text">Generate New Paper</span>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link sidebar-link" href="{% url 'logout' %}">
+                <i class="fas fa-sign-out-alt me-2"></i>
+                <span class="link-text">Logout</span>
+              </a>
+            </li>
+          </ul>
+          
+          <!-- Quick Stats -->
+          <div class="mt-4 p-3 bg-white rounded-3 shadow-sm">
+            <h6 class="fw-semibold mb-3">
+              <i class="fas fa-chart-bar me-2 text-primary"></i>Quick Stats
+            </h6>
+            <div class="small">
+              <div class="d-flex justify-content-between mb-2">
+                <span>Available Papers:</span>
+                <span class="badge bg-primary">{{ available_papers|length }}</span>
+              </div>
+              <div class="d-flex justify-content-between mb-2">
+                <span>Subjects:</span>
+                <span class="badge bg-info">{{ subjects|length }}</span>
+              </div>
+              <div class="d-flex justify-content-between mb-2">
+                <span>Your Papers:</span>
+                <span class="badge bg-success">{{ student_generated_papers|length }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Student Profile Card -->
+          <div class="mt-3 p-3 bg-primary text-white rounded-3 shadow-sm">
+            <div class="text-center">
+              <div class="student-avatar mb-2">
+                <i class="fas fa-user-circle fa-2x"></i>
+              </div>
+              <h6 class="mb-1">{{ request.user.username }}</h6>
+              <small class="opacity-75">Student</small>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Content -->
+      <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+        <!-- Header -->
+        <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-4 border-bottom">
+          <h1 class="h2 fw-bold text-primary">
+            <i class="fas fa-tachometer-alt me-2"></i>Student Dashboard
+          </h1>
+          <div class="btn-toolbar mb-2 mb-md-0">
+            <div class="btn-group me-2">
+              <span class="btn btn-sm btn-outline-secondary">
+                <i class="fas fa-user me-1"></i>Welcome, {{ request.user.username }} (Student)
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Welcome Message -->
+        <div class="alert alert-info mb-4">
+          <h4 class="alert-heading">
+            <i class="fas fa-graduation-cap me-2"></i>Welcome to Student Portal!
+          </h4>
+          <p class="mb-0">Here you can access all available question papers, generate custom papers, and download them for practice.</p>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="row mb-5">
+          <div class="col-md-4 mb-3">
+            <div class="card text-center border-0 shadow-sm h-100 action-card">
+              <div class="card-body">
+                <div class="action-icon">
+                  <i class="fas fa-file-download"></i>
+                </div>
+                <h5 class="card-title">Download Papers</h5>
+                <p class="card-text">Download individual question papers created by your instructors</p>
+                <a href="#available-papers" class="btn btn-primary action-btn">
+                  <i class="fas fa-arrow-down me-1"></i>Browse Papers
+                </a>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-4 mb-3">
+            <div class="card text-center border-0 shadow-sm h-100 action-card">
+              <div class="card-body">
+                <div class="action-icon">
+                  <i class="fas fa-plus-circle"></i>
+                </div>
+                <h5 class="card-title">Generate Paper</h5>
+                <p class="card-text">Create your own custom question paper by selecting questions</p>
+                <a href="{% url 'student_generate_custom_paper' %}" class="btn btn-success action-btn">
+                  <i class="fas fa-magic me-1"></i>Generate Now
+                </a>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-4 mb-3">
+            <div class="card text-center border-0 shadow-sm h-100 action-card">
+              <div class="card-body">
+                <div class="action-icon">
+                  <i class="fas fa-history"></i>
+                </div>
+                <h5 class="card-title">Your Papers</h5>
+                <p class="card-text">View and download papers you've generated previously</p>
+                <a href="{% url 'student_generated_papers' %}" class="btn btn-info text-white action-btn">
+                  <i class="fas fa-folder-open me-1"></i>View History
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recently Generated Papers -->
+        {% if student_generated_papers %}
+        <div class="row mb-5">
+          <div class="col-12">
+            <div class="card border-0 shadow-sm">
+              <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                  <i class="fas fa-history me-2 text-primary"></i>Your Recently Generated Papers
+                </h5>
+                <a href="{% url 'student_generated_papers' %}" class="btn btn-sm btn-outline-primary">View All</a>
+              </div>
+              <div class="card-body">
+                <div class="row">
+                  {% for paper in student_generated_papers %}
+                  <div class="col-md-6 col-lg-4 mb-3">
+                    <div class="card h-100 border paper-card">
+                      <div class="card-body">
+                        <h6 class="card-title">{{ paper.title }}</h6>
+                        <p class="card-text small text-muted">
+                          <i class="fas fa-question-circle me-1"></i>{{ paper.number_of_questions }} questions<br>
+                          <i class="fas fa-star me-1"></i>{{ paper.total_marks }} total marks<br>
+                          <i class="fas fa-calendar me-1"></i>{{ paper.created_at|date:"M d, Y" }}
+                        </p>
+                      </div>
+                      <div class="card-footer bg-transparent">
+                        <a href="{% url 'student_download_generated_paper' paper.id %}" class="btn btn-sm btn-outline-primary w-100">
+                          <i class="fas fa-download me-1"></i>Download
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                  {% endfor %}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- Available Question Papers Section -->
+        <div id="available-papers" class="mb-5">
+          <div class="d-flex justify-content-between align-items-center mb-4">
+            <h3 class="fw-bold text-dark">
+              <i class="fas fa-file-alt me-2 text-primary"></i>Available Question Papers
+            </h3>
+            <span class="badge bg-primary fs-6">{{ available_papers|length }} papers</span>
+          </div>
+
+          {% if available_papers %}
+            <div class="row g-4">
+              {% for paper in available_papers %}
+              <div class="col-xl-4 col-lg-6 col-md-6">
+                <div class="card h-100 shadow-sm border-0 paper-card">
+                  <div class="card-header bg-primary text-white py-3">
+                    <h5 class="card-title mb-0 d-flex justify-content-between align-items-center">
+                      <span>{{ paper.subject.name|default:"General" }}</span>
+                      <span class="badge bg-light text-dark">{{ paper.marks }} marks</span>
+                    </h5>
+                  </div>
+                  <div class="card-body">
+                    <p class="card-text text-muted mb-3">
+                      <strong>Topic:</strong> {{ paper.topic.name|default:"General Topic" }}
+                    </p>
+                    <p class="card-text question-preview">
+                      {{ paper.question|truncatewords:15 }}
+                    </p>
+                    <div class="question-details mt-3">
+                      <div class="row small text-muted">
+                        <div class="col-6">
+                          <i class="fas fa-star me-1 text-warning"></i>
+                          Difficulty: {{ paper.difficulty }}/5
+                        </div>
+                        <div class="col-6 text-end">
+                          <i class="fas fa-user me-1 text-info"></i>
+                          {{ paper.user.username }}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="card-footer bg-transparent border-top-0 pt-0">
+                    <div class="btn-group w-100" role="group">
+                      <a href="{% url 'student_download_paper' paper.id %}" class="btn btn-primary btn-sm">
+                        <i class="fas fa-download me-1"></i>Download PDF
+                      </a>
+                      <button type="button" class="btn btn-outline-primary btn-sm view-question" 
+                              data-bs-toggle="modal" data-bs-target="#questionModal"
+                              data-question="{{ paper.question }}"
+                              data-subject="{{ paper.subject.name|default:'General' }}"
+                              data-topic="{{ paper.topic.name|default:'General Topic' }}"
+                              data-marks="{{ paper.marks }}"
+                              data-difficulty="{{ paper.difficulty }}">
+                        <i class="fas fa-eye me-1"></i>View
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <div class="text-center py-5">
+              <i class="fas fa-inbox display-1 text-muted mb-4"></i>
+              <h4 class="text-muted mb-3">No Question Papers Available</h4>
+              <p class="text-muted mb-4">There are currently no question papers available for viewing.</p>
+              <div class="alert alert-info w-75 mx-auto">
+                <strong>Note:</strong> Question papers will appear here once your instructors create and publish them.
+              </div>
+            </div>
+          {% endif %}
+        </div>
+
+        <!-- Subjects Overview -->
+        <div class="row mt-5">
+          <div class="col-12">
+            <div class="card border-0 shadow-sm">
+              <div class="card-header bg-light">
+                <h5 class="mb-0">
+                  <i class="fas fa-book me-2 text-primary"></i>Available Subjects
+                </h5>
+              </div>
+              <div class="card-body">
+                {% if subjects %}
+                  <div class="d-flex flex-wrap gap-2">
+                    {% for subject in subjects %}
+                    <span class="badge bg-primary fs-6 p-2 subject-badge">
+                      <i class="fas fa-bookmark me-1"></i>{{ subject.name }}
+                    </span>
+                    {% endfor %}
+                  </div>
+                {% else %}
+                  <p class="text-muted mb-0">No subjects available yet.</p>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- Question Modal -->
+  <div class="modal fade" id="questionModal" tabindex="-1" aria-labelledby="questionModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header bg-primary text-white">
+          <h5 class="modal-title" id="questionModalLabel">
+            <i class="fas fa-file-alt me-2"></i>Question Details
+          </h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <strong><i class="fas fa-book me-2 text-primary"></i>Subject:</strong>
+              <span id="modal-subject" class="ms-2">-</span>
+            </div>
+            <div class="col-md-6">
+              <strong><i class="fas fa-tag me-2 text-primary"></i>Topic:</strong>
+              <span id="modal-topic" class="ms-2">-</span>
+            </div>
+          </div>
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <strong><i class="fas fa-star me-2 text-warning"></i>Marks:</strong>
+              <span id="modal-marks" class="ms-2">-</span>
+            </div>
+            <div class="col-md-6">
+              <strong><i class="fas fa-tachometer-alt me-2 text-info"></i>Difficulty:</strong>
+              <span id="modal-difficulty" class="ms-2">-</span>
+            </div>
+          </div>
+          <hr>
+          <div>
+            <strong><i class="fas fa-question-circle me-2 text-success"></i>Question:</strong>
+            <p id="modal-question" class="mt-2 p-3 bg-light rounded-2">-</p>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <style>
+    /* Sidebar Styles - SIMPLIFIED */
+    .sidebar {
+      min-height: calc(100vh - 80px);
+      box-shadow: inset -1px 0 0 rgba(0, 0, 0, .1);
+      background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    }
+    
+    .sidebar-nav {
+      margin-bottom: 2rem;
+    }
+    
+    .sidebar-link {
+      color: #495057;
+      border-radius: 0.5rem;
+      margin-bottom: 0.5rem;
+      transition: all 0.3s ease;
+      padding: 0.75rem 1rem;
+      display: flex;
+      align-items: center;
+      text-decoration: none;
+      background-color: white;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+      border: 1px solid #e9ecef;
+    }
+    
+    .sidebar-link:hover, .sidebar-link.active {
+      background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
+      color: white;
+      transform: translateX(5px);
+      box-shadow: 0 4px 12px rgba(13, 110, 253, 0.3);
+      border-color: #0a58ca;
+    }
+    
+    .sidebar-link .link-text {
+      transition: all 0.3s ease;
+    }
+    
+    .sidebar-link:hover .link-text,
+    .sidebar-link.active .link-text {
+      font-weight: 600;
+    }
+
+    /* CARD HOVER ANIMATIONS ONLY */
+    .paper-card {
+      transition: all 0.3s ease;
+      border: 1px solid #e9ecef;
+    }
+    
+    .paper-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+      border-color: #0d6efd;
+    }
+    
+    .action-card {
+      transition: all 0.3s ease;
+      border: 2px solid transparent;
+    }
+    
+    .action-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+      border-color: #0d6efd;
+    }
+    
+    .action-icon {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+      color: #0d6efd;
+      transition: all 0.3s ease;
+    }
+    
+    .action-card:hover .action-icon {
+      transform: scale(1.1);
+      color: #0a58ca;
+    }
+    
+    .action-btn {
+      transition: all 0.3s ease;
+    }
+    
+    .action-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    }
+    
+    .subject-badge {
+      transition: all 0.3s ease;
+    }
+    
+    .subject-badge:hover {
+      transform: scale(1.05);
+      box-shadow: 0 4px 12px rgba(13, 110, 253, 0.3);
+    }
+    
+    .question-preview {
+      min-height: 60px;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+      .sidebar {
+        min-height: auto;
+        margin-bottom: 1rem;
+      }
+      
+      .paper-card {
+        margin-bottom: 1rem;
+      }
+      
+      .sidebar-link:hover {
+        transform: translateX(3px);
+      }
+    }
+  </style>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Initialize toasts
+      const toastElList = document.querySelectorAll('.toast');
+      const toastList = [...toastElList].map(toastEl => {
+        const toast = new bootstrap.Toast(toastEl);
+        toast.show();
+        return toast;
+      });
+      
+      // Question modal handler
+      const questionModal = document.getElementById('questionModal');
+      if (questionModal) {
+        questionModal.addEventListener('show.bs.modal', function(event) {
+          const button = event.relatedTarget;
+          document.getElementById('modal-question').textContent = button.getAttribute('data-question');
+          document.getElementById('modal-subject').textContent = button.getAttribute('data-subject');
+          document.getElementById('modal-topic').textContent = button.getAttribute('data-topic');
+          document.getElementById('modal-marks').textContent = button.getAttribute('data-marks') + ' marks';
+          document.getElementById('modal-difficulty').textContent = button.getAttribute('data-difficulty') + '/5';
+        });
+      }
+      
+      // Smooth scroll for sidebar links
+      document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function(e) {
+          e.preventDefault();
+          const target = document.querySelector(this.getAttribute('href'));
+          if (target) {
+            target.scrollIntoView({
+              behavior: 'smooth',
+              block: 'start'
+            });
+          }
+        });
+      });
+    });
+  </script>
+{% endblock %}

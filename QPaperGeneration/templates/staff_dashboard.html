@@ -1,0 +1,488 @@
+{% extends "layout.html" %}
+
+{% block title %}Staff Dashboard - QGen{% endblock %}
+
+{% block body %}
+<div class="container-fluid py-4">
+    <!-- Welcome Header -->
+    <div class="row mb-5">
+        <div class="col-12">
+            <div class="card bg-primary text-white shadow-lg">
+                <div class="card-body py-4">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h1 class="display-6 fw-bold mb-2">Welcome, {{ user.username }}!</h1>
+                            <p class="lead mb-0">Teaching Staff Dashboard - Manage questions and generate papers</p>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <div class="bg-white bg-opacity-25 rounded-pill px-3 py-2 d-inline-block">
+                                <i class="fas fa-chalkboard-teacher me-2"></i>
+                                <span class="fw-bold">{{ user.get_role_display }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <div class="text-primary mb-2">
+                        <i class="fas fa-question-circle fa-2x"></i>
+                    </div>
+                    <h3 class="text-primary mb-1">{{ my_questions }}</h3>
+                    <p class="text-muted mb-0">My Questions</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <div class="text-success mb-2">
+                        <i class="fas fa-database fa-2x"></i>
+                    </div>
+                    <h3 class="text-success mb-1">{{ total_questions }}</h3>
+                    <p class="text-muted mb-0">Total Questions</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <div class="text-info mb-2">
+                        <i class="fas fa-book fa-2x"></i>
+                    </div>
+                    <h3 class="text-info mb-1">{{ subjects.count }}</h3>
+                    <p class="text-muted mb-0">Subjects</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <div class="text-warning mb-2">
+                        <i class="fas fa-file-pdf fa-2x"></i>
+                    </div>
+                    <h3 class="text-warning mb-1">{{ recent_questions.count }}</h3>
+                    <p class="text-muted mb-0">Recent Added</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Action Cards -->
+    <div class="row mb-5">
+        <div class="col-md-4 mb-4">
+            <div class="card border-0 shadow-lg h-100 hover-lift">
+                <div class="card-body p-4 text-center">
+                    <div class="icon-wrapper bg-primary bg-opacity-10 rounded-circle mx-auto mb-3">
+                        <i class="fas fa-file-pdf fa-3x text-primary"></i>
+                    </div>
+                    <h3 class="card-title fw-bold text-dark mb-3">Create Question Paper</h3>
+                    <p class="card-text text-muted mb-4">
+                        Create customized question papers with different patterns and formats.
+                    </p>
+                    <a href="{% url 'papergenerator' %}" class="btn btn-primary btn-lg w-100">
+                        <i class="fas fa-plus-circle me-2"></i>Create New Paper
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-4">
+            <div class="card border-0 shadow-lg h-100 hover-lift">
+                <div class="card-body p-4 text-center">
+                    <div class="icon-wrapper bg-info bg-opacity-10 rounded-circle mx-auto mb-3">
+                        <i class="fas fa-cogs fa-3x text-info"></i>
+                    </div>
+                    <h3 class="card-title fw-bold text-dark mb-3">Generate Paper</h3>
+                    <p class="card-text text-muted mb-4">
+                        Generate papers from existing questions with custom instructions and formatting.
+                    </p>
+                    <a href="{% url 'staff_generate_paper' %}" class="btn btn-info btn-lg w-100">
+                        <i class="fas fa-magic me-2"></i>Generate Paper
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-4">
+            <div class="card border-0 shadow-lg h-100 hover-lift">
+                <div class="card-body p-4 text-center">
+                    <div class="icon-wrapper bg-success bg-opacity-10 rounded-circle mx-auto mb-3">
+                        <i class="fas fa-question-circle fa-3x text-success"></i>
+                    </div>
+                    <h3 class="card-title fw-bold text-dark mb-3">Manage Questions</h3>
+                    <p class="card-text text-muted mb-4">
+                        Add, edit, and manage your question bank. Organize questions by subject and topic.
+                    </p>
+                    <a href="{% url 'myquestions' %}" class="btn btn-success btn-lg w-100">
+                        <i class="fas fa-tasks me-2"></i>Manage Questions
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity & Quick Actions -->
+    <div class="row">
+        <!-- Recent Questions -->
+        <div class="col-lg-8 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-0 py-3">
+                    <h5 class="mb-0">
+                        <i class="fas fa-history me-2 text-primary"></i>
+                        Recent Questions
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if recent_questions %}
+                    <div class="list-group list-group-flush">
+                        {% for question in recent_questions %}
+                        <div class="list-group-item border-0 px-0 py-3">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="flex-grow-1">
+                                    <h6 class="mb-1 fw-semibold">{{ question.question|truncatewords:10 }}</h6>
+                                    <p class="text-muted small mb-1">
+                                        <i class="fas fa-book me-1"></i>{{ question.subject.name }} • 
+                                        <i class="fas fa-tag me-1"></i>{{ question.topic.name }}
+                                    </p>
+                                    <div class="d-flex align-items-center">
+                                        <span class="badge {% if question.marks == 2 %}bg-success{% elif question.marks == 5 %}bg-warning text-dark{% else %}bg-danger{% endif %} me-2">
+                                            {{ question.marks }} marks
+                                        </span>
+                                        <span class="badge {% if question.difficulty <= 2 %}bg-success{% elif question.difficulty == 3 %}bg-warning text-dark{% else %}bg-danger{% endif %} me-2">
+                                            Difficulty: {{ question.difficulty }}/5
+                                        </span>
+                                        <span class="badge bg-light text-dark">
+                                            By: {{ question.user.username }}
+                                        </span>
+                                    </div>
+                                </div>
+                                <small class="text-muted">{{ question.id }}</small>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                        <p class="text-muted mb-2">No questions added yet.</p>
+                        <a href="{% url 'myquestions' %}" class="btn btn-outline-primary">Add Your First Question</a>
+                    </div>
+                    {% endif %}
+                </div>
+                {% if recent_questions %}
+                <div class="card-footer bg-white border-0 py-3">
+                    <a href="{% url 'myquestions' %}" class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-eye me-1"></i>View All Questions
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="col-lg-4 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-0 py-3">
+                    <h5 class="mb-0">
+                        <i class="fas fa-bolt me-2 text-warning"></i>
+                        Quick Actions
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'papergenerator' %}" class="btn btn-outline-primary btn-lg text-start py-3">
+                            <i class="fas fa-file-pdf me-2"></i>
+                            Create New Paper
+                        </a>
+                        <a href="{% url 'staff_generate_paper' %}" class="btn btn-outline-info btn-lg text-start py-3">
+                            <i class="fas fa-cogs me-2"></i>
+                            Generate Paper
+                        </a>
+                        <a href="{% url 'myquestions' %}" class="btn btn-outline-success btn-lg text-start py-3">
+                            <i class="fas fa-plus-circle me-2"></i>
+                            Add New Question
+                        </a>
+                        <a href="{% url 'view_papers' %}" class="btn btn-outline-warning btn-lg text-start py-3">
+                            <i class="fas fa-eye me-2"></i>
+                            View All Papers
+                        </a>
+                        <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary btn-lg text-start py-3">
+                            <i class="fas fa-home me-2"></i>
+                            Main Dashboard
+                        </a>
+                    </div>
+                    
+                    <!-- Subject Quick Stats -->
+                    <div class="mt-4 pt-3 border-top">
+                        <h6 class="fw-semibold mb-3">
+                            <i class="fas fa-book me-2 text-info"></i>
+                            Available Subjects
+                        </h6>
+                        <div class="d-flex flex-wrap gap-2">
+                            {% for subject in subjects %}
+                            <span class="badge bg-light text-dark border">{{ subject.name }}</span>
+                            {% empty %}
+                            <span class="text-muted small">No subjects available</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Quick Tips -->
+                    <div class="mt-4 pt-3 border-top">
+                        <h6 class="fw-semibold mb-3">
+                            <i class="fas fa-lightbulb me-2 text-warning"></i>
+                            Quick Tips
+                        </h6>
+                        <div class="small text-muted">
+                            <p class="mb-2">• Add questions with different mark values for better paper generation</p>
+                            <p class="mb-2">• Use filters when generating papers to find specific questions</p>
+                            <p class="mb-0">• Include custom instructions for better student guidance</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- System Status -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-0 py-3">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-bar me-2 text-success"></i>
+                        System Status
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-2 col-6 mb-3">
+                            <div class="text-primary">
+                                <i class="fas fa-question-circle fa-2x mb-2"></i>
+                                <h4>{{ my_questions }}</h4>
+                                <small class="text-muted">Your Questions</small>
+                            </div>
+                        </div>
+                        <div class="col-md-2 col-6 mb-3">
+                            <div class="text-success">
+                                <i class="fas fa-database fa-2x mb-2"></i>
+                                <h4>{{ total_questions }}</h4>
+                                <small class="text-muted">Total Questions</small>
+                            </div>
+                        </div>
+                        <div class="col-md-2 col-6 mb-3">
+                            <div class="text-info">
+                                <i class="fas fa-book fa-2x mb-2"></i>
+                                <h4>{{ subjects.count }}</h4>
+                                <small class="text-muted">Subjects</small>
+                            </div>
+                        </div>
+                        <div class="col-md-2 col-6 mb-3">
+                            <div class="text-warning">
+                                <i class="fas fa-tags fa-2x mb-2"></i>
+                                <h4>{{ recent_questions.count }}</h4>
+                                <small class="text-muted">Recent</small>
+                            </div>
+                        </div>
+                        <div class="col-md-2 col-6 mb-3">
+                            <div class="text-danger">
+                                <i class="fas fa-file-pdf fa-2x mb-2"></i>
+                                <h4>{% widthratio my_questions 1 2 %}</h4>
+                                <small class="text-muted">Possible Papers</small>
+                            </div>
+                        </div>
+                        <div class="col-md-2 col-6 mb-3">
+                            <div class="text-secondary">
+                                <i class="fas fa-chart-line fa-2x mb-2"></i>
+                                <h4>100%</h4>
+                                <small class="text-muted">System Ready</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.hover-lift {
+    transition: all 0.3s ease;
+}
+
+.hover-lift:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15) !important;
+}
+
+.icon-wrapper {
+    width: 80px;
+    height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.bg-opacity-10 {
+    background-color: rgba(var(--bs-primary-rgb), 0.1) !important;
+}
+
+.list-group-item {
+    border-left: 3px solid transparent;
+    transition: all 0.3s ease;
+}
+
+.list-group-item:hover {
+    border-left-color: #4361ee;
+    background-color: #f8f9fa;
+}
+
+.btn-lg {
+    padding: 12px 20px;
+    font-weight: 500;
+}
+
+.card {
+    border-radius: 15px;
+}
+
+.display-6 {
+    font-size: 2.5rem;
+}
+
+/* Badge colors for difficulty */
+.badge.bg-success { background-color: #28a745 !important; }
+.badge.bg-warning { background-color: #ffc107 !important; color: #000 !important; }
+.badge.bg-danger { background-color: #dc3545 !important; }
+.badge.bg-info { background-color: #17a2b8 !important; }
+.badge.bg-secondary { background-color: #6c757d !important; }
+
+@media (max-width: 768px) {
+    .display-6 {
+        font-size: 2rem;
+    }
+    
+    .btn-lg {
+        padding: 10px 16px;
+        font-size: 0.9rem;
+    }
+    
+    .icon-wrapper {
+        width: 60px;
+        height: 60px;
+    }
+    
+    .icon-wrapper i {
+        font-size: 2rem !important;
+    }
+}
+
+/* Animation classes */
+.fade-in {
+    animation: fadeIn 0.6s ease-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.slide-in-left {
+    animation: slideInLeft 0.7s ease-out;
+}
+
+@keyframes slideInLeft {
+    from { opacity: 0; transform: translateX(-30px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+.slide-in-right {
+    animation: slideInRight 0.7s ease-out;
+}
+
+@keyframes slideInRight {
+    from { opacity: 0; transform: translateX(30px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add animation to cards on page load
+    const cards = document.querySelectorAll('.card');
+    cards.forEach((card, index) => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(20px)';
+        
+        setTimeout(() => {
+            card.style.transition = 'all 0.5s ease';
+            card.style.opacity = '1';
+            card.style.transform = 'translateY(0)';
+        }, index * 100);
+    });
+
+    // Add hover effects to quick action buttons
+    const quickActionBtns = document.querySelectorAll('.btn-outline-primary, .btn-outline-info, .btn-outline-success, .btn-outline-warning');
+    quickActionBtns.forEach(btn => {
+        btn.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-2px)';
+            this.style.transition = 'all 0.3s ease';
+        });
+        
+        btn.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0)';
+        });
+    });
+
+    // Add pulse animation to stats cards
+    const statCards = document.querySelectorAll('.card.border-0.shadow-sm');
+    statCards.forEach((card, index) => {
+        setTimeout(() => {
+            card.classList.add('pulse-animation');
+        }, index * 200);
+    });
+
+    // System status check (simulated)
+    function updateSystemStatus() {
+        const statusElement = document.querySelector('.text-secondary h4');
+        if (statusElement) {
+            // Simulate system check
+            setTimeout(() => {
+                statusElement.textContent = '100%';
+                statusElement.style.color = '#28a745';
+            }, 1000);
+        }
+    }
+
+    updateSystemStatus();
+});
+
+// Add CSS for pulse animation
+const style = document.createElement('style');
+style.textContent = `
+    .pulse-animation {
+        animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.02); }
+        100% { transform: scale(1); }
+    }
+    
+    .btn-outline-primary:hover { background-color: #0d6efd; color: white; }
+    .btn-outline-info:hover { background-color: #0dcaf0; color: white; }
+    .btn-outline-success:hover { background-color: #198754; color: white; }
+    .btn-outline-warning:hover { background-color: #ffc107; color: black; }
+    .btn-outline-secondary:hover { background-color: #6c757d; color: white; }
+`;
+document.head.appendChild(style);
+</script>
+{% endblock %}

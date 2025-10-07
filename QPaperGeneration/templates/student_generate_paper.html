@@ -1,0 +1,149 @@
+<!-- QGen/QPaperGeneration/templates/student_generate_paper.html -->
+{% extends "layout.html" %}
+
+{% block title %}Generate Custom Paper{% endblock %}
+
+{% block body %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h2 fw-bold text-primary">
+                    <i class="fas fa-plus-circle me-2"></i>Generate Custom Question Paper
+                </h1>
+                <a href="{% url 'student_dashboard' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-1"></i>Back to Dashboard
+                </a>
+            </div>
+
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-magic me-2"></i>Select Questions for Your Paper
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" action="{% url 'student_generate_custom_paper' %}">
+                        {% csrf_token %}
+                        
+                        <div class="mb-4">
+                            <label for="paper_title" class="form-label fw-semibold">Paper Title</label>
+                            <input type="text" class="form-control" id="paper_title" name="paper_title" 
+                                   value="My Custom Practice Paper" required>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">Available Questions</label>
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>
+                                                <input type="checkbox" id="selectAll" class="form-check-input">
+                                                <label for="selectAll" class="form-check-label ms-2">Select All</label>
+                                            </th>
+                                            <th>Question</th>
+                                            <th>Subject</th>
+                                            <th>Topic</th>
+                                            <th>Marks</th>
+                                            <th>Difficulty</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for question in available_questions %}
+                                        <tr>
+                                            <td>
+                                                <input type="checkbox" name="selected_questions" 
+                                                       value="{{ question.id }}" class="form-check-input question-checkbox">
+                                            </td>
+                                            <td>
+                                                <div class="question-text">{{ question.question|truncatewords:10 }}</div>
+                                            </td>
+                                            <td>{{ question.subject.name }}</td>
+                                            <td>{{ question.topic.name }}</td>
+                                            <td>
+                                                <span class="badge {% if question.marks == 2 %}bg-success{% elif question.marks == 5 %}bg-warning text-dark{% else %}bg-danger{% endif %}">
+                                                    {{ question.marks }}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-secondary">{{ question.difficulty }}/5</span>
+                                            </td>
+                                        </tr>
+                                        {% empty %}
+                                        <tr>
+                                            <td colspan="6" class="text-center py-4">
+                                                <i class="fas fa-inbox display-4 text-muted mb-3"></i>
+                                                <p class="text-muted">No questions available for selection.</p>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>Selected Questions: </strong>
+                                <span id="selectedCount" class="badge bg-primary">0</span>
+                                <strong class="ms-3">Total Marks: </strong>
+                                <span id="totalMarks" class="badge bg-success">0</span>
+                            </div>
+                            <button type="submit" class="btn btn-primary btn-lg" id="generateBtn" disabled>
+                                <i class="fas fa-file-pdf me-2"></i>Generate PDF Paper
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.question-checkbox:checked + .question-text {
+    font-weight: bold;
+    color: #0d6efd;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const selectAll = document.getElementById('selectAll');
+    const checkboxes = document.querySelectorAll('.question-checkbox');
+    const selectedCount = document.getElementById('selectedCount');
+    const totalMarks = document.getElementById('totalMarks');
+    const generateBtn = document.getElementById('generateBtn');
+
+    function updateSelection() {
+        const selected = document.querySelectorAll('.question-checkbox:checked');
+        selectedCount.textContent = selected.length;
+        
+        let marks = 0;
+        selected.forEach(checkbox => {
+            const row = checkbox.closest('tr');
+            const marksBadge = row.querySelector('.badge');
+            marks += parseInt(marksBadge.textContent);
+        });
+        totalMarks.textContent = marks;
+        
+        generateBtn.disabled = selected.length === 0;
+    }
+
+    selectAll.addEventListener('change', function() {
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = this.checked;
+        });
+        updateSelection();
+    });
+
+    checkboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', updateSelection);
+    });
+
+    // Initial update
+    updateSelection();
+});
+</script>
+{% endblock %}

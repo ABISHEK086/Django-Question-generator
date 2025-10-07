@@ -1,0 +1,194 @@
+<!-- QGen/QPaperGeneration/templates/student_update_paper.html -->
+{% extends "layout.html" %}
+
+{% block title %}Update Paper - {{ generated_paper.title }}{% endblock %}
+
+{% block body %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h2 fw-bold text-primary">
+                    <i class="fas fa-edit me-2"></i>Update Paper: {{ generated_paper.title }}
+                </h1>
+                <div>
+                    <a href="{% url 'student_generated_papers' %}" class="btn btn-outline-secondary me-2">
+                        <i class="fas fa-arrow-left me-1"></i>Back to Papers
+                    </a>
+                    <a href="{% url 'student_dashboard' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-tachometer-alt me-1"></i>Dashboard
+                    </a>
+                </div>
+            </div>
+
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">
+                        <i class="fas fa-edit me-2"></i>Update Your Question Paper
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" action="{% url 'student_update_generated_paper' generated_paper.id %}">
+                        {% csrf_token %}
+                        
+                        <div class="mb-4">
+                            <label for="paper_title" class="form-label fw-semibold">Paper Title</label>
+                            <input type="text" class="form-control" id="paper_title" name="paper_title" 
+                                   value="{{ generated_paper.title }}" required>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">Select Questions</label>
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-2"></i>
+                                Currently selected questions are pre-checked. Modify your selection as needed.
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>
+                                                <input type="checkbox" id="selectAll" class="form-check-input">
+                                                <label for="selectAll" class="form-check-label ms-2">Select All</label>
+                                            </th>
+                                            <th>Question</th>
+                                            <th>Subject</th>
+                                            <th>Topic</th>
+                                            <th>Marks</th>
+                                            <th>Difficulty</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for question in available_questions %}
+                                        <tr>
+                                            <td>
+                                                <input type="checkbox" name="selected_questions" 
+                                                       value="{{ question.id }}" 
+                                                       class="form-check-input question-checkbox"
+                                                       {% if question.id in current_question_ids %}checked{% endif %}>
+                                            </td>
+                                            <td>
+                                                <div class="question-text">{{ question.question|truncatewords:10 }}</div>
+                                            </td>
+                                            <td>{{ question.subject.name }}</td>
+                                            <td>{{ question.topic.name }}</td>
+                                            <td>
+                                                <span class="badge {% if question.marks == 2 %}bg-success{% elif question.marks == 5 %}bg-warning text-dark{% else %}bg-danger{% endif %}">
+                                                    {{ question.marks }}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-secondary">{{ question.difficulty }}/5</span>
+                                            </td>
+                                        </tr>
+                                        {% empty %}
+                                        <tr>
+                                            <td colspan="6" class="text-center py-4">
+                                                <i class="fas fa-inbox display-4 text-muted mb-3"></i>
+                                                <p class="text-muted">No questions available for selection.</p>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>Selected Questions: </strong>
+                                <span id="selectedCount" class="badge bg-primary">{{ generated_paper.number_of_questions }}</span>
+                                <strong class="ms-3">Total Marks: </strong>
+                                <span id="totalMarks" class="badge bg-success">{{ generated_paper.total_marks }}</span>
+                            </div>
+                            <div>
+                                <button type="submit" class="btn btn-warning btn-lg" id="updateBtn">
+                                    <i class="fas fa-save me-2"></i>Update Paper
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Current Paper Info -->
+            <div class="card border-0 bg-light mt-4">
+                <div class="card-body">
+                    <h6 class="fw-semibold mb-3">
+                        <i class="fas fa-info-circle me-2 text-primary"></i>Current Paper Information
+                    </h6>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <strong>Title:</strong> {{ generated_paper.title }}
+                        </div>
+                        <div class="col-md-2">
+                            <strong>Questions:</strong> {{ generated_paper.number_of_questions }}
+                        </div>
+                        <div class="col-md-2">
+                            <strong>Total Marks:</strong> {{ generated_paper.total_marks }}
+                        </div>
+                        <div class="col-md-4">
+                            <strong>Last Updated:</strong> {{ generated_paper.updated_at|date:"M d, Y H:i" }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.question-checkbox:checked + .question-text {
+    font-weight: bold;
+    color: #ffc107;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const selectAll = document.getElementById('selectAll');
+    const checkboxes = document.querySelectorAll('.question-checkbox');
+    const selectedCount = document.getElementById('selectedCount');
+    const totalMarks = document.getElementById('totalMarks');
+    const updateBtn = document.getElementById('updateBtn');
+
+    function updateSelection() {
+        const selected = document.querySelectorAll('.question-checkbox:checked');
+        selectedCount.textContent = selected.length;
+        
+        let marks = 0;
+        selected.forEach(checkbox => {
+            const row = checkbox.closest('tr');
+            const marksBadge = row.querySelector('.badge');
+            marks += parseInt(marksBadge.textContent);
+        });
+        totalMarks.textContent = marks;
+        
+        updateBtn.disabled = selected.length === 0;
+    }
+
+    selectAll.addEventListener('change', function() {
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = this.checked;
+        });
+        updateSelection();
+    });
+
+    checkboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', updateSelection);
+    });
+
+    // Check if select all should be checked initially
+    function updateSelectAll() {
+        const allChecked = Array.from(checkboxes).every(checkbox => checkbox.checked);
+        const someChecked = Array.from(checkboxes).some(checkbox => checkbox.checked);
+        selectAll.checked = allChecked;
+        selectAll.indeterminate = someChecked && !allChecked;
+    }
+
+    // Initial updates
+    updateSelection();
+    updateSelectAll();
+});
+</script>
+{% endblock %}

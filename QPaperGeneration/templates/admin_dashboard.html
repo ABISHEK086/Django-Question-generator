@@ -1,0 +1,489 @@
+<!-- QGen/QPaperGeneration/templates/admin_dashboard.html -->
+{% extends "layout.html" %}
+
+{% block title %}Admin Dashboard - QGen{% endblock %}
+
+{% block body %}
+<div class="container-fluid py-4">
+    <!-- Welcome Header -->
+    <div class="row mb-5">
+        <div class="col-12">
+            <div class="card bg-dark text-white shadow-lg">
+                <div class="card-body py-4">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h1 class="display-6 fw-bold mb-2">Admin Dashboard</h1>
+                            <p class="lead mb-0">Welcome, {{ user.username }}! Manage the entire QGen system</p>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <div class="bg-white bg-opacity-25 rounded-pill px-3 py-2 d-inline-block">
+                                <i class="fas fa-crown me-2"></i>
+                                <span class="fw-bold">Administrator</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- System Overview Stats -->
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <div class="text-primary mb-2">
+                        <i class="fas fa-users fa-2x"></i>
+                    </div>
+                    <h3 class="text-primary mb-1">{{ total_users }}</h3>
+                    <p class="text-muted mb-0">Total Users</p>
+                    <small class="text-muted">
+                        {{ staff_count }} Staff • {{ student_count }} Students
+                    </small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <div class="text-success mb-2">
+                        <i class="fas fa-question-circle fa-2x"></i>
+                    </div>
+                    <h3 class="text-success mb-1">{{ total_questions }}</h3>
+                    <p class="text-muted mb-0">Total Questions</p>
+                    <small class="text-muted">
+                        {{ questions_today }} today
+                    </small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <div class="text-info mb-2">
+                        <i class="fas fa-book fa-2x"></i>
+                    </div>
+                    <h3 class="text-info mb-1">{{ total_subjects }}</h3>
+                    <p class="text-muted mb-0">Subjects</p>
+                    <small class="text-muted">
+                        {{ active_subjects }} active
+                    </small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <div class="text-warning mb-2">
+                        <i class="fas fa-file-pdf fa-2x"></i>
+                    </div>
+                    <h3 class="text-warning mb-1">{{ total_papers }}</h3>
+                    <p class="text-muted mb-0">Generated Papers</p>
+                    <small class="text-muted">
+                        {{ papers_today }} today
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Admin Actions -->
+    <div class="row mb-5">
+        <div class="col-md-4 mb-4">
+            <div class="card border-0 shadow-lg h-100 hover-lift">
+                <div class="card-body p-4 text-center">
+                    <div class="icon-wrapper bg-primary bg-opacity-10 rounded-circle mx-auto mb-3">
+                        <i class="fas fa-user-cog fa-3x text-primary"></i>
+                    </div>
+                    <h3 class="card-title fw-bold text-dark mb-3">User Management</h3>
+                    <p class="card-text text-muted mb-4">
+                        Manage all users, roles, permissions, and access controls.
+                    </p>
+                    <a href="{% url 'user_management' %}" class="btn btn-primary btn-lg w-100">
+                        <i class="fas fa-users-cog me-2"></i>Manage Users
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-4">
+            <div class="card border-0 shadow-lg h-100 hover-lift">
+                <div class="card-body p-4 text-center">
+                    <div class="icon-wrapper bg-success bg-opacity-10 rounded-circle mx-auto mb-3">
+                        <i class="fas fa-database fa-3x text-success"></i>
+                    </div>
+                    <h3 class="card-title fw-bold text-dark mb-3">System Data</h3>
+                    <p class="card-text text-muted mb-4">
+                        View and manage all questions, subjects, and system data.
+                    </p>
+                    <a href="{% url 'view_papers' %}" class="btn btn-success btn-lg w-100">
+                        <i class="fas fa-database me-2"></i>View All Data
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-4">
+            <div class="card border-0 shadow-lg h-100 hover-lift">
+                <div class="card-body p-4 text-center">
+                    <div class="icon-wrapper bg-info bg-opacity-10 rounded-circle mx-auto mb-3">
+                        <i class="fas fa-chart-bar fa-3x text-info"></i>
+                    </div>
+                    <h3 class="card-title fw-bold text-dark mb-3">Analytics</h3>
+                    <p class="card-text text-muted mb-4">
+                        View system usage statistics and performance metrics.
+                    </p>
+                    <a href="#analytics" class="btn btn-info btn-lg w-100">
+                        <i class="fas fa-chart-line me-2"></i>View Analytics
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Management Section -->
+    <div id="user-management" class="row mb-5">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-0 py-3">
+                    <h4 class="mb-0">
+                        <i class="fas fa-users me-2 text-primary"></i>
+                        User Management
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <!-- Staff Users -->
+                        <div class="col-md-6 mb-4">
+                            <div class="card h-100 border-0 shadow-sm">
+                                <div class="card-header bg-primary text-white">
+                                    <h5 class="mb-0">
+                                        <i class="fas fa-chalkboard-teacher me-2"></i>
+                                        Teaching Staff ({{ staff_users|length }})
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    {% if staff_users %}
+                                    <div class="list-group list-group-flush">
+                                        {% for user in staff_users %}
+                                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <h6 class="mb-1">{{ user.username }}</h6>
+                                                <small class="text-muted">{{ user.email }}</small>
+                                            </div>
+                                            <span class="badge bg-primary">Staff</span>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                    {% else %}
+                                    <p class="text-muted text-center py-3">No staff users found.</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Student Users -->
+                        <div class="col-md-6 mb-4">
+                            <div class="card h-100 border-0 shadow-sm">
+                                <div class="card-header bg-success text-white">
+                                    <h5 class="mb-0">
+                                        <i class="fas fa-user-graduate me-2"></i>
+                                        Students ({{ student_users|length }})
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    {% if student_users %}
+                                    <div class="list-group list-group-flush">
+                                        {% for user in student_users %}
+                                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <h6 class="mb-1">{{ user.username }}</h6>
+                                                <small class="text-muted">{{ user.email }}</small>
+                                            </div>
+                                            <span class="badge bg-success">Student</span>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                    {% else %}
+                                    <p class="text-muted text-center py-3">No student users found.</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="row mb-5">
+        <div class="col-lg-8 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-0 py-3">
+                    <h5 class="mb-0">
+                        <i class="fas fa-history me-2 text-primary"></i>
+                        Recent System Activity
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if recent_activity %}
+                    <div class="list-group list-group-flush">
+                        {% for activity in recent_activity %}
+                        <div class="list-group-item border-0 px-0 py-3">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="flex-grow-1">
+                                    <h6 class="mb-1 fw-semibold">{{ activity.description }}</h6>
+                                    <p class="text-muted small mb-1">
+                                        <i class="fas fa-user me-1"></i>{{ activity.user.username }} • 
+                                        <i class="fas fa-clock me-1"></i>{{ activity.timestamp|timesince }} ago
+                                    </p>
+                                </div>
+                                <span class="badge {% if activity.type == 'question' %}bg-success{% elif activity.type == 'user' %}bg-primary{% else %}bg-info{% endif %}">
+                                    {{ activity.type }}
+                                </span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                        <p class="text-muted mb-2">No recent activity.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Admin Actions -->
+        <div class="col-lg-4 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-0 py-3">
+                    <h5 class="mb-0">
+                        <i class="fas fa-bolt me-2 text-warning"></i>
+                        Quick Admin Actions
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'view_papers' %}" class="btn btn-outline-primary btn-lg text-start py-3">
+                            <i class="fas fa-database me-2"></i>
+                            View All Questions
+                        </a>
+                        <a href="#user-management" class="btn btn-outline-success btn-lg text-start py-3">
+                            <i class="fas fa-user-plus me-2"></i>
+                            Add New User
+                        </a>
+                        <a href="#" class="btn btn-outline-info btn-lg text-start py-3">
+                            <i class="fas fa-cog me-2"></i>
+                            System Settings
+                        </a>
+                        <a href="#" class="btn btn-outline-warning btn-lg text-start py-3">
+                            <i class="fas fa-download me-2"></i>
+                            Export Data
+                        </a>
+                        <a href="#" class="btn btn-outline-danger btn-lg text-start py-3">
+                            <i class="fas fa-trash me-2"></i>
+                            Cleanup System
+                        </a>
+                    </div>
+
+                    <!-- System Status -->
+                    <div class="mt-4 pt-3 border-top">
+                        <h6 class="fw-semibold mb-3">
+                            <i class="fas fa-server me-2 text-info"></i>
+                            System Status
+                        </h6>
+                        <div class="small">
+                            <div class="d-flex justify-content-between mb-2">
+                                <span>Database:</span>
+                                <span class="badge bg-success">Online</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-2">
+                                <span>Storage:</span>
+                                <span class="badge bg-success">85% Free</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-2">
+                                <span>Users Online:</span>
+                                <span class="badge bg-primary">{{ active_users }}</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-0">
+                                <span>System Load:</span>
+                                <span class="badge bg-success">Normal</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Analytics Section -->
+    <div id="analytics" class="row mt-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-0 py-3">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-bar me-2 text-success"></i>
+                        System Analytics
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-2 col-6 mb-3">
+                            <div class="text-primary">
+                                <i class="fas fa-users fa-2x mb-2"></i>
+                                <h4>{{ total_users }}</h4>
+                                <small class="text-muted">Total Users</small>
+                            </div>
+                        </div>
+                        <div class="col-md-2 col-6 mb-3">
+                            <div class="text-success">
+                                <i class="fas fa-question-circle fa-2x mb-2"></i>
+                                <h4>{{ total_questions }}</h4>
+                                <small class="text-muted">Questions</small>
+                            </div>
+                        </div>
+                        <div class="col-md-2 col-6 mb-3">
+                            <div class="text-info">
+                                <i class="fas fa-book fa-2x mb-2"></i>
+                                <h4>{{ total_subjects }}</h4>
+                                <small class="text-muted">Subjects</small>
+                            </div>
+                        </div>
+                        <div class="col-md-2 col-6 mb-3">
+                            <div class="text-warning">
+                                <i class="fas fa-file-pdf fa-2x mb-2"></i>
+                                <h4>{{ total_papers }}</h4>
+                                <small class="text-muted">Papers</small>
+                            </div>
+                        </div>
+                        <div class="col-md-2 col-6 mb-3">
+                            <div class="text-danger">
+                                <i class="fas fa-chart-line fa-2x mb-2"></i>
+                                <h4>{{ questions_today }}</h4>
+                                <small class="text-muted">Today</small>
+                            </div>
+                        </div>
+                        <div class="col-md-2 col-6 mb-3">
+                            <div class="text-secondary">
+                                <i class="fas fa-check-circle fa-2x mb-2"></i>
+                                <h4>100%</h4>
+                                <small class="text-muted">Uptime</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.hover-lift {
+    transition: all 0.3s ease;
+}
+
+.hover-lift:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15) !important;
+}
+
+.icon-wrapper {
+    width: 80px;
+    height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.bg-opacity-10 {
+    background-color: rgba(var(--bs-primary-rgb), 0.1) !important;
+}
+
+.list-group-item {
+    border-left: 3px solid transparent;
+    transition: all 0.3s ease;
+}
+
+.list-group-item:hover {
+    border-left-color: #4361ee;
+    background-color: #f8f9fa;
+}
+
+.btn-lg {
+    padding: 12px 20px;
+    font-weight: 500;
+}
+
+.card {
+    border-radius: 15px;
+}
+
+.display-6 {
+    font-size: 2.5rem;
+}
+
+@media (max-width: 768px) {
+    .display-6 {
+        font-size: 2rem;
+    }
+    
+    .btn-lg {
+        padding: 10px 16px;
+        font-size: 0.9rem;
+    }
+    
+    .icon-wrapper {
+        width: 60px;
+        height: 60px;
+    }
+    
+    .icon-wrapper i {
+        font-size: 2rem !important;
+    }
+}
+
+/* Animation classes */
+.fade-in {
+    animation: fadeIn 0.6s ease-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add animation to cards on page load
+    const cards = document.querySelectorAll('.card');
+    cards.forEach((card, index) => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(20px)';
+        
+        setTimeout(() => {
+            card.style.transition = 'all 0.5s ease';
+            card.style.opacity = '1';
+            card.style.transform = 'translateY(0)';
+        }, index * 100);
+    });
+
+    // Smooth scroll for internal links
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function(e) {
+            e.preventDefault();
+            const target = document.querySelector(this.getAttribute('href'));
+            if (target) {
+                target.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

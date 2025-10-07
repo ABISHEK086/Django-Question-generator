@@ -1,0 +1,744 @@
+<!-- QGen/QPaperGeneration/templates/user_management.html -->
+{% extends "layout.html" %}
+
+{% block title %}User Management - Admin Dashboard{% endblock %}
+
+{% block body %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card bg-dark text-white shadow-lg">
+                <div class="card-body py-4">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h1 class="display-6 fw-bold mb-2">
+                                <i class="fas fa-users-cog me-2"></i>User Management
+                            </h1>
+                            <p class="lead mb-0">Manage all system users, roles, and permissions</p>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <button class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#createUserModal">
+                                <i class="fas fa-user-plus me-2"></i>Add New User
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <div class="text-primary mb-2">
+                        <i class="fas fa-users fa-2x"></i>
+                    </div>
+                    <h3 class="text-primary mb-1">{{ total_users }}</h3>
+                    <p class="text-muted mb-0">Total Users</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <div class="text-success mb-2">
+                        <i class="fas fa-user-graduate fa-2x"></i>
+                    </div>
+                    <h3 class="text-success mb-1">{{ student_count }}</h3>
+                    <p class="text-muted mb-0">Students</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <div class="text-info mb-2">
+                        <i class="fas fa-chalkboard-teacher fa-2x"></i>
+                    </div>
+                    <h3 class="text-info mb-1">{{ staff_count }}</h3>
+                    <p class="text-muted mb-0">Staff</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <div class="text-warning mb-2">
+                        <i class="fas fa-crown fa-2x"></i>
+                    </div>
+                    <h3 class="text-warning mb-1">{{ admin_count }}</h3>
+                    <p class="text-muted mb-0">Admins</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters and Search -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <form method="get" class="row g-3">
+                        <div class="col-md-4">
+                            <label for="search" class="form-label">Search Users</label>
+                            <input type="text" class="form-control" id="search" name="search" 
+                                   value="{{ search_query }}" placeholder="Search by username or email...">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="role" class="form-label">Filter by Role</label>
+                            <select name="role" id="role" class="form-select">
+                                <option value="">All Roles</option>
+                                <option value="student" {% if role_filter == 'student' %}selected{% endif %}>Student</option>
+                                <option value="staff" {% if role_filter == 'staff' %}selected{% endif %}>Staff</option>
+                                <option value="admin" {% if role_filter == 'admin' %}selected{% endif %}>Admin</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary me-2">Apply Filters</button>
+                            <a href="{% url 'user_management' %}" class="btn btn-outline-secondary">Clear</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Users Table -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-0 py-3">
+                    <h5 class="mb-0">
+                        <i class="fas fa-list me-2 text-primary"></i>
+                        All Users ({{ total_users }})
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if users %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>User ID</th>
+                                    <th>Username</th>
+                                    <th>Email</th>
+                                    <th>Role</th>
+                                    <th>Status</th>
+                                    <th>Joined</th>
+                                    <th>Last Login</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for user in users %}
+                                <tr id="user-row-{{ user.id }}">
+                                    <td><code>#{{ user.id }}</code></td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="avatar-sm me-2">
+                                                <i class="fas fa-user-circle fa-lg text-muted"></i>
+                                            </div>
+                                            <div>
+                                                <strong>{{ user.username }}</strong>
+                                                {% if user.id == request.user.id %}
+                                                <span class="badge bg-info ms-1">You</span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>{{ user.email }}</td>
+                                    <td>
+                                        <span class="badge 
+                                            {% if user.role == 'admin' %}bg-warning text-dark
+                                            {% elif user.role == 'staff' %}bg-info
+                                            {% else %}bg-success{% endif %}">
+                                            {{ user.get_role_display }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge {% if user.is_active %}bg-success{% else %}bg-danger{% endif %}">
+                                            {% if user.is_active %}Active{% else %}Inactive{% endif %}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">{{ user.date_joined|date:"M d, Y" }}</small>
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">
+                                            {% if user.last_login %}
+                                                {{ user.last_login|timesince }} ago
+                                            {% else %}
+                                                Never
+                                            {% endif %}
+                                        </small>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <button class="btn btn-outline-primary edit-user-btn" 
+                                                    data-user-id="{{ user.id }}"
+                                                    data-user-username="{{ user.username }}"
+                                                    data-user-email="{{ user.email }}"
+                                                    data-user-role="{{ user.role }}"
+                                                    data-user-active="{{ user.is_active }}"
+                                                    data-bs-toggle="modal" 
+                                                    data-bs-target="#editUserModal">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <button class="btn btn-outline-info reset-password-btn" 
+                                                    data-user-id="{{ user.id }}"
+                                                    data-user-username="{{ user.username }}"
+                                                    data-bs-toggle="modal" 
+                                                    data-bs-target="#resetPasswordModal">
+                                                <i class="fas fa-key"></i>
+                                            </button>
+                                            {% if user.id != request.user.id %}
+                                            <button class="btn btn-outline-danger delete-user-btn" 
+                                                    data-user-id="{{ user.id }}"
+                                                    data-user-username="{{ user.username }}"
+                                                    data-bs-toggle="modal" 
+                                                    data-bs-target="#deleteUserModal">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                            {% else %}
+                                            <button class="btn btn-outline-secondary" disabled>
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination -->
+                    {% if users.has_other_pages %}
+                    <nav aria-label="Page navigation" class="mt-4">
+                        <ul class="pagination justify-content-center">
+                            {% if users.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ users.previous_page_number }}{% if role_filter %}&role={{ role_filter }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}">Previous</a>
+                            </li>
+                            {% else %}
+                            <li class="page-item disabled">
+                                <span class="page-link">Previous</span>
+                            </li>
+                            {% endif %}
+
+                            {% for i in users.paginator.page_range %}
+                                {% if users.number == i %}
+                                <li class="page-item active"><span class="page-link">{{ i }}</span></li>
+                                {% else %}
+                                <li class="page-item"><a class="page-link" href="?page={{ i }}{% if role_filter %}&role={{ role_filter }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}">{{ i }}</a></li>
+                                {% endif %}
+                            {% endfor %}
+
+                            {% if users.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ users.next_page_number }}{% if role_filter %}&role={{ role_filter }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}">Next</a>
+                            </li>
+                            {% else %}
+                            <li class="page-item disabled">
+                                <span class="page-link">Next</span>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                    {% endif %}
+
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-users display-1 text-muted mb-3"></i>
+                        <h4 class="text-muted">No Users Found</h4>
+                        <p class="text-muted mb-4">No users match your current filters.</p>
+                        <a href="{% url 'user_management' %}" class="btn btn-primary">Clear Filters</a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Create User Modal -->
+<div class="modal fade" id="createUserModal" tabindex="-1" aria-labelledby="createUserModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="createUserModalLabel">
+                    <i class="fas fa-user-plus me-2"></i>Create New User
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="createUserForm">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="newUsername" class="form-label">Username *</label>
+                        <input type="text" class="form-control" id="newUsername" name="username" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="newEmail" class="form-label">Email *</label>
+                        <input type="email" class="form-control" id="newEmail" name="email" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="createPassword" class="form-label">Password *</label>
+                        <input type="password" class="form-control" id="createPassword" name="password" required>
+                        <div class="form-text">Minimum 8 characters recommended</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="newRole" class="form-label">Role *</label>
+                        <select class="form-select" id="newRole" name="role" required>
+                            <option value="student">Student</option>
+                            <option value="staff">Staff</option>
+                            <option value="admin">Admin</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="createUserBtn">
+                        <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                        Create User
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit User Modal -->
+<div class="modal fade" id="editUserModal" tabindex="-1" aria-labelledby="editUserModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title" id="editUserModalLabel">
+                    <i class="fas fa-edit me-2"></i>Edit User
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="editUserForm">
+                {% csrf_token %}
+                <input type="hidden" id="editUserId" name="user_id">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="editUsername" class="form-label">Username *</label>
+                        <input type="text" class="form-control" id="editUsername" name="username" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editEmail" class="form-label">Email *</label>
+                        <input type="email" class="form-control" id="editEmail" name="email" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editRole" class="form-label">Role *</label>
+                        <select class="form-select" id="editRole" name="role" required>
+                            <option value="student">Student</option>
+                            <option value="staff">Staff</option>
+                            <option value="admin">Admin</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="editIsActive" name="is_active">
+                            <label class="form-check-label" for="editIsActive">Active User</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-info text-white" id="editUserBtn">
+                        <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                        Update User
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Reset Password Modal -->
+<div class="modal fade" id="resetPasswordModal" tabindex="-1" aria-labelledby="resetPasswordModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title" id="resetPasswordModalLabel">
+                    <i class="fas fa-key me-2"></i>Reset Password
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="resetPasswordForm">
+                {% csrf_token %}
+                <input type="hidden" id="resetPasswordUserId" name="user_id">
+                <div class="modal-body">
+                    <p>Reset password for user: <strong id="resetPasswordUsername"></strong></p>
+                    <div class="mb-3">
+                        <label for="resetNewPassword" class="form-label">New Password *</label>
+                        <input type="password" class="form-control" id="resetNewPassword" name="new_password" required>
+                        <div class="form-text">Enter the new password for this user</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-warning" id="resetPasswordBtn">
+                        <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                        Reset Password
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Delete User Modal -->
+<div class="modal fade" id="deleteUserModal" tabindex="-1" aria-labelledby="deleteUserModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="deleteUserModalLabel">
+                    <i class="fas fa-trash me-2"></i>Delete User
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete this user?</p>
+                <div class="alert alert-warning">
+                    <strong>Warning:</strong> This action cannot be undone. All data associated with this user will be permanently deleted.
+                </div>
+                <p>User: <strong id="deleteUserUsername"></strong></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteUserBtn">
+                    <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                    Delete User
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.avatar-sm {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.table tbody tr:hover {
+    background-color: rgba(0, 123, 255, 0.05);
+}
+
+.btn-group-sm .btn {
+    padding: 0.25rem 0.5rem;
+}
+
+.fade-out {
+    opacity: 0;
+    transition: opacity 0.3s ease-out;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Get CSRF token properly
+    function getCSRFToken() {
+        const csrfInput = document.querySelector('[name=csrfmiddlewaretoken]');
+        if (csrfInput) {
+            return csrfInput.value;
+        }
+        
+        // Alternative method to get CSRF token from cookie
+        const cookieValue = document.cookie
+            .split('; ')
+            .find(row => row.startsWith('csrftoken='))
+            ?.split('=')[1];
+            
+        return cookieValue || '';
+    }
+
+    const csrfToken = getCSRFToken();
+    console.log('CSRF Token available:', csrfToken ? 'Yes' : 'No');
+
+    let currentUserId = null;
+    let currentUserName = null;
+
+    // Create User Form
+    document.getElementById('createUserForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        createUser();
+    });
+
+    // Edit User Form
+    document.getElementById('editUserForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        updateUser();
+    });
+
+    // Reset Password Form
+    document.getElementById('resetPasswordForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        resetPassword();
+    });
+
+    // Delete User Confirmation
+    document.getElementById('confirmDeleteUserBtn').addEventListener('click', function() {
+        deleteUser();
+    });
+
+    // Edit User Button Handlers
+    document.querySelectorAll('.edit-user-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            currentUserId = this.getAttribute('data-user-id');
+            document.getElementById('editUserId').value = currentUserId;
+            document.getElementById('editUsername').value = this.getAttribute('data-user-username');
+            document.getElementById('editEmail').value = this.getAttribute('data-user-email');
+            document.getElementById('editRole').value = this.getAttribute('data-user-role');
+            document.getElementById('editIsActive').checked = this.getAttribute('data-user-active') === 'True';
+        });
+    });
+
+    // Reset Password Button Handlers
+    document.querySelectorAll('.reset-password-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            currentUserId = this.getAttribute('data-user-id');
+            document.getElementById('resetPasswordUserId').value = currentUserId;
+            document.getElementById('resetPasswordUsername').textContent = this.getAttribute('data-user-username');
+            document.getElementById('resetNewPassword').value = ''; // Clear previous input
+        });
+    });
+
+    // Delete User Button Handlers
+    document.querySelectorAll('.delete-user-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            currentUserId = this.getAttribute('data-user-id');
+            currentUserName = this.getAttribute('data-user-username');
+            document.getElementById('deleteUserUsername').textContent = currentUserName;
+            console.log('Delete button clicked for user:', currentUserId, currentUserName);
+        });
+    });
+
+    // Create User Function
+    function createUser() {
+        const formData = new FormData(document.getElementById('createUserForm'));
+        const createBtn = document.getElementById('createUserBtn');
+        const spinner = createBtn.querySelector('.spinner-border');
+
+        spinner.classList.remove('d-none');
+        createBtn.disabled = true;
+
+        fetch('{% url "create_user" %}', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrfToken,
+            },
+            body: formData
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                showAlert(data.message, 'success');
+                document.getElementById('createUserForm').reset();
+                bootstrap.Modal.getInstance(document.getElementById('createUserModal')).hide();
+                // Reload page to show new user
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                throw new Error(data.error || 'Failed to create user');
+            }
+        })
+        .catch(error => {
+            console.error('Create user error:', error);
+            showAlert('Error creating user: ' + error.message, 'danger');
+        })
+        .finally(() => {
+            spinner.classList.add('d-none');
+            createBtn.disabled = false;
+        });
+    }
+
+    // Update User Function
+    function updateUser() {
+        const formData = new FormData(document.getElementById('editUserForm'));
+        const editBtn = document.getElementById('editUserBtn');
+        const spinner = editBtn.querySelector('.spinner-border');
+
+        spinner.classList.remove('d-none');
+        editBtn.disabled = true;
+
+        fetch(`/user-management/update/${currentUserId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrfToken,
+            },
+            body: formData
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                showAlert(data.message, 'success');
+                bootstrap.Modal.getInstance(document.getElementById('editUserModal')).hide();
+                // Reload page to show updated user
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                throw new Error(data.error || 'Failed to update user');
+            }
+        })
+        .catch(error => {
+            console.error('Update user error:', error);
+            showAlert('Error updating user: ' + error.message, 'danger');
+        })
+        .finally(() => {
+            spinner.classList.add('d-none');
+            editBtn.disabled = false;
+        });
+    }
+
+    // Reset Password Function
+    function resetPassword() {
+        const newPassword = document.getElementById('resetNewPassword').value;
+        const resetBtn = document.getElementById('resetPasswordBtn');
+        const spinner = resetBtn.querySelector('.spinner-border');
+
+        if (!newPassword) {
+            showAlert('Please enter a new password', 'warning');
+            return;
+        }
+
+        spinner.classList.remove('d-none');
+        resetBtn.disabled = true;
+
+        const formData = new FormData();
+        formData.append('new_password', newPassword);
+        formData.append('csrfmiddlewaretoken', csrfToken);
+
+        fetch(`/user-management/reset-password/${currentUserId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrfToken,
+            },
+            body: formData
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                showAlert(data.message, 'success');
+                document.getElementById('resetPasswordForm').reset();
+                bootstrap.Modal.getInstance(document.getElementById('resetPasswordModal')).hide();
+            } else {
+                throw new Error(data.error || 'Failed to reset password');
+            }
+        })
+        .catch(error => {
+            console.error('Reset password error:', error);
+            showAlert('Error resetting password: ' + error.message, 'danger');
+        })
+        .finally(() => {
+            spinner.classList.add('d-none');
+            resetBtn.disabled = false;
+        });
+    }
+
+    // Delete User Function
+    function deleteUser() {
+        const deleteBtn = document.getElementById('confirmDeleteUserBtn');
+        const spinner = deleteBtn.querySelector('.spinner-border');
+
+        spinner.classList.remove('d-none');
+        deleteBtn.disabled = true;
+
+        const formData = new FormData();
+        formData.append('csrfmiddlewaretoken', csrfToken);
+
+        fetch(`/user-management/delete/${currentUserId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrfToken,
+            },
+            body: formData
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                showAlert(data.message, 'success');
+                // Remove user row with animation
+                const row = document.getElementById(`user-row-${currentUserId}`);
+                if (row) {
+                    row.classList.add('fade-out');
+                    setTimeout(() => row.remove(), 300);
+                }
+                bootstrap.Modal.getInstance(document.getElementById('deleteUserModal')).hide();
+            } else {
+                throw new Error(data.error || 'Failed to delete user');
+            }
+        })
+        .catch(error => {
+            console.error('Delete user error:', error);
+            showAlert('Error deleting user: ' + error.message, 'danger');
+        })
+        .finally(() => {
+            spinner.classList.add('d-none');
+            deleteBtn.disabled = false;
+        });
+    }
+
+    // Show Alert Function
+    function showAlert(message, type) {
+        // Remove existing alerts
+        const existingAlert = document.querySelector('.custom-alert');
+        if (existingAlert) {
+            existingAlert.remove();
+        }
+
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type} alert-dismissible fade show custom-alert mt-3`;
+        alertDiv.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+
+        const container = document.querySelector('.container-fluid.py-4');
+        container.insertBefore(alertDiv, container.firstChild);
+
+        setTimeout(() => {
+            if (alertDiv.parentNode) {
+                const bsAlert = new bootstrap.Alert(alertDiv);
+                bsAlert.close();
+            }
+        }, 5000);
+    }
+
+    // Reset modals when hidden
+    ['createUserModal', 'editUserModal', 'resetPasswordModal', 'deleteUserModal'].forEach(modalId => {
+        document.getElementById(modalId).addEventListener('hidden.bs.modal', function() {
+            currentUserId = null;
+            currentUserName = null;
+        });
+    });
+});
+</script>
+{% endblock %}

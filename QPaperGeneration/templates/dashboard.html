@@ -1,0 +1,369 @@
+{% extends "layout.html" %}
+
+{% block title %}Welcome to QGen{% endblock %}
+
+{% block body %}
+<div class="container-fluid py-5 bg-light min-vh-100">
+    <!-- Header Section -->
+    <div class="text-center mb-5 animate-fade-in">
+        <h1 class="display-4 fw-bold text-primary mb-3">Welcome to QGen</h1>
+        <p class="lead text-muted">Intelligent Question Paper Generation System</p>
+        
+        {% if user.is_authenticated %}
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="alert alert-info border-0 shadow-sm">
+                    <i class="fas fa-user-circle me-2"></i>
+                    Logged in as: <strong>{{ user.username }}</strong> | 
+                    Role: <span class="badge bg-primary">{{ user.get_role_display }}</span>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Role Selection Cards for Non-Authenticated Users -->
+    {% if not user.is_authenticated %}
+    <div class="row justify-content-center g-4 mb-5">
+        <div class="col-12 text-center mb-4">
+            <h2 class="h3 fw-bold text-dark">Select Your Login Portal</h2>
+            <p class="text-muted">Choose your role to access the system</p>
+        </div>
+
+        <!-- Student Login Card -->
+        <div class="col-xl-3 col-lg-4 col-md-6">
+            <div class="card role-card student-card h-100 shadow-lg border-0 animate-card" data-aos="fade-up" data-aos-delay="100">
+                <div class="card-body text-center p-4">
+                    <div class="icon-wrapper mb-3">
+                        <i class="fas fa-user-graduate fa-3x text-success"></i>
+                    </div>
+                    <h3 class="card-title fw-bold text-dark mb-3">Student Portal</h3>
+                    <p class="card-text text-muted mb-4">
+                        Access and download question papers for practice and examination preparation.
+                    </p>
+                    <ul class="list-unstyled text-start mb-4">
+                        <li class="mb-2"><i class="fas fa-check text-success me-2"></i>View Question Papers</li>
+                        <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Download PDFs</li>
+                        <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Practice Tests</li>
+                        <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Study Materials</li>
+                    </ul>
+                    <a href="{% url 'student_login' %}" class="btn btn-success btn-lg w-100 fw-bold">
+                        Student Login <i class="fas fa-arrow-right ms-2"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Staff Login Card -->
+        <div class="col-xl-3 col-lg-4 col-md-6">
+            <div class="card role-card staff-card h-100 shadow-lg border-0 animate-card" data-aos="fade-up" data-aos-delay="200">
+                <div class="card-body text-center p-4">
+                    <div class="icon-wrapper mb-3">
+                        <i class="fas fa-chalkboard-teacher fa-3x text-info"></i>
+                    </div>
+                    <h3 class="card-title fw-bold text-dark mb-3">Staff Portal</h3>
+                    <p class="card-text text-muted mb-4">
+                        Create, manage questions and generate customized question papers for examinations.
+                    </p>
+                    <ul class="list-unstyled text-start mb-4">
+                        <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Create Questions</li>
+                        <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Generate Papers</li>
+                        <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Manage Question Bank</li>
+                        <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Paper Templates</li>
+                    </ul>
+                    <a href="{% url 'staff_login' %}" class="btn btn-info btn-lg w-100 fw-bold">
+                        Staff Login <i class="fas fa-arrow-right ms-2"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Admin Login Card -->
+        <div class="col-xl-3 col-lg-4 col-md-6">
+            <div class="card role-card admin-card h-100 shadow-lg border-0 animate-card" data-aos="fade-up" data-aos-delay="300">
+                <div class="card-body text-center p-4">
+                    <div class="icon-wrapper mb-3">
+                        <i class="fas fa-crown fa-3x text-warning"></i>
+                    </div>
+                    <h3 class="card-title fw-bold text-dark mb-3">Admin Portal</h3>
+                    <p class="card-text text-muted mb-4">
+                        Full system access with complete control over users, questions, and system settings.
+                    </p>
+                    <ul class="list-unstyled text-start mb-4">
+                        <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Manage All Users</li>
+                        <li class="mb-2"><i class="fas fa-check text-success me-2"></i>System Configuration</li>
+                        <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Full Question Access</li>
+                        <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Advanced Analytics</li>
+                    </ul>
+                    <a href="{% url 'admin_login' %}" class="btn btn-warning btn-lg w-100 fw-bold">
+                        Admin Login <i class="fas fa-arrow-right ms-2"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Registration Option -->
+    <div class="row justify-content-center">
+        <div class="col-md-6 text-center">
+            <div class="card border-0 bg-light">
+                <div class="card-body py-4">
+                    <h4 class="mb-3">New to QGen?</h4>
+                    <p class="text-muted mb-3">Create a new student account to get started</p>
+                    <a href="{% url 'register' %}" class="btn btn-outline-primary btn-lg">
+                        <i class="fas fa-user-plus me-2"></i>Register as Student
+                    </a>
+                    <p class="small text-muted mt-2">
+                        Staff and Admin accounts are created by system administrators
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- For Authenticated Users - Show Role Cards -->
+    {% else %}
+    <div class="row justify-content-center g-4">
+        <!-- Admin sees all cards -->
+        {% if user.role == 'admin' %}
+        <div class="col-xl-3 col-lg-4 col-md-6">
+            <div class="card role-card admin-card h-100 shadow-lg border-0">
+                <div class="card-body text-center p-4">
+                    <div class="icon-wrapper mb-3">
+                        <i class="fas fa-crown fa-3x text-warning"></i>
+                    </div>
+                    <h3 class="card-title fw-bold text-dark mb-3">Administrator</h3>
+                    <p class="card-text text-muted mb-4">
+                        Full system access with complete control over users, questions, and system settings.
+                    </p>
+                    <a href="{% url 'admin_dashboard' %}" class="btn btn-warning btn-lg w-100 fw-bold">
+                        Admin Panel <i class="fas fa-arrow-right ms-2"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Staff and Admin see Staff card -->
+        {% if user.role == 'staff' or user.role == 'admin' %}
+        <div class="col-xl-3 col-lg-4 col-md-6">
+            <div class="card role-card staff-card h-100 shadow-lg border-0">
+                <div class="card-body text-center p-4">
+                    <div class="icon-wrapper mb-3">
+                        <i class="fas fa-chalkboard-teacher fa-3x text-info"></i>
+                    </div>
+                    <h3 class="card-title fw-bold text-dark mb-3">Teaching Staff</h3>
+                    <p class="card-text text-muted mb-4">
+                        Create, manage questions and generate customized question papers for examinations.
+                    </p>
+                    <a href="{% url 'staff_dashboard' %}" class="btn btn-info btn-lg w-100 fw-bold">
+                        Staff Portal <i class="fas fa-arrow-right ms-2"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- All roles see Student card -->
+        <div class="col-xl-3 col-lg-4 col-md-6">
+            <div class="card role-card student-card h-100 shadow-lg border-0">
+                <div class="card-body text-center p-4">
+                    <div class="icon-wrapper mb-3">
+                        <i class="fas fa-user-graduate fa-3x text-success"></i>
+                    </div>
+                    <h3 class="card-title fw-bold text-dark mb-3">Student</h3>
+                    <p class="card-text text-muted mb-4">
+                        Access and download question papers for practice and examination preparation.
+                    </p>
+                    <a href="{% url 'student_dashboard' %}" class="btn btn-success btn-lg w-100 fw-bold">
+                        Student Portal <i class="fas fa-arrow-right ms-2"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Stats for Admin -->
+    {% if user.role == 'admin' %}
+    <div class="row mt-5" data-aos="fade-up" data-aos-delay="400">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <h4 class="mb-0"><i class="fas fa-chart-bar me-2 text-primary"></i>System Overview</h4>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-3 mb-3">
+                            <div class="stat-card p-3 border rounded">
+                                <h3 class="text-primary mb-1">{{ total_users }}</h3>
+                                <p class="text-muted mb-0">Total Users</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="stat-card p-3 border rounded">
+                                <h3 class="text-success mb-1">{{ total_questions }}</h3>
+                                <p class="text-muted mb-0">Questions</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="stat-card p-3 border rounded">
+                                <h3 class="text-info mb-1">{{ total_papers }}</h3>
+                                <p class="text-muted mb-0">Papers Generated</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="stat-card p-3 border rounded">
+                                <h3 class="text-warning mb-1">{{ total_subjects }}</h3>
+                                <p class="text-muted mb-0">Subjects</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    {% endif %}
+</div>
+
+<style>
+/* Animations */
+.animate-fade-in {
+    animation: fadeIn 1s ease-out;
+}
+
+.animate-card {
+    animation: slideUp 0.6s ease-out;
+    transition: all 0.3s ease;
+}
+
+.animate-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 15px 35px rgba(0,0,0,0.1) !important;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideUp {
+    from { 
+        opacity: 0; 
+        transform: translateY(30px); 
+    }
+    to { 
+        opacity: 1; 
+        transform: translateY(0); 
+    }
+}
+
+/* Card Specific Styles */
+.role-card {
+    border-radius: 20px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.admin-card {
+    border-bottom: 4px solid #ffc107;
+}
+
+.staff-card {
+    border-bottom: 4px solid #0dcaf0;
+}
+
+.student-card {
+    border-bottom: 4px solid #198754;
+}
+
+.icon-wrapper {
+    padding: 20px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    display: inline-block;
+}
+
+.stat-card {
+    transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .display-4 {
+        font-size: 2rem;
+    }
+    
+    .role-card {
+        margin-bottom: 1.5rem;
+    }
+}
+
+/* Button Animations */
+.btn {
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+}
+
+.btn::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 5px;
+    height: 5px;
+    background: rgba(255, 255, 255, 0.5);
+    opacity: 0;
+    border-radius: 100%;
+    transform: scale(1, 1) translate(-50%);
+    transform-origin: 50% 50%;
+}
+
+.btn:hover::after {
+    animation: ripple 1s ease-out;
+}
+
+@keyframes ripple {
+    0% {
+        transform: scale(0, 0);
+        opacity: 0.5;
+    }
+    100% {
+        transform: scale(20, 20);
+        opacity: 0;
+    }
+}
+
+.min-vh-100 {
+    min-height: 100vh;
+}
+
+.min-vh-80 {
+    min-height: 80vh;
+}
+</style>
+
+<!-- AOS Animation Library -->
+<link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+<script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+<script>
+    // Initialize AOS animations
+    document.addEventListener('DOMContentLoaded', function() {
+        AOS.init({
+            duration: 800,
+            once: true,
+            offset: 100
+        });
+    });
+</script>
+{% endblock %}

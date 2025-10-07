@@ -1,0 +1,451 @@
+<!-- QGen/QPaperGeneration/templates/staff_generate_paper.html -->
+{% extends "layout.html" %}
+
+{% block title %}Generate Question Paper - Staff{% endblock %}
+
+{% block body %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h2 fw-bold text-primary">
+                    <i class="fas fa-plus-circle me-2"></i>Generate Question Paper - Staff
+                </h1>
+                <a href="{% url 'staff_dashboard' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-1"></i>Back to Dashboard
+                </a>
+            </div>
+
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-magic me-2"></i>Select Questions for Your Paper
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" action="{% url 'staff_generate_paper' %}">
+                        {% csrf_token %}
+                        
+                        <div class="row mb-4">
+                            <div class="col-md-8">
+                                <label for="paper_title" class="form-label fw-semibold">Paper Title</label>
+                                <input type="text" class="form-control" id="paper_title" name="paper_title" 
+                                       value="My Custom Practice Paper" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="paper_instructions" class="form-label fw-semibold">Instructions (Optional)</label>
+                                <textarea class="form-control" id="paper_instructions" name="paper_instructions" 
+                                          rows="1" placeholder="Add any special instructions for the paper"></textarea>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">Available Questions</label>
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>
+                                                <input type="checkbox" id="selectAll" class="form-check-input">
+                                                <label for="selectAll" class="form-check-label ms-2">Select All</label>
+                                            </th>
+                                            <th>Question</th>
+                                            <th>Subject</th>
+                                            <th>Topic</th>
+                                            <th>Marks</th>
+                                            <th>Difficulty</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>
+                                                <input type="checkbox" name="selected_questions" 
+                                                       value="1" class="form-check-input question-checkbox">
+                                            </td>
+                                            <td>
+                                                <div class="question-text">What is meant by data assimilation?</div>
+                                            </td>
+                                            <td>OX60</td>
+                                            <td>Introduction to Computer Networks</td>
+                                            <td>
+                                                <span class="badge bg-success">2</span>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-secondary">3/5</span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                <input type="checkbox" name="selected_questions" 
+                                                       value="2" class="form-check-input question-checkbox">
+                                            </td>
+                                            <td>
+                                                <div class="question-text">What is different &/without Metadata?</div>
+                                            </td>
+                                            <td>OX60</td>
+                                            <td>Introduction to Computer Networks</td>
+                                            <td>
+                                                <span class="badge bg-success">2</span>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-secondary">3/5</span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                <input type="checkbox" name="selected_questions" 
+                                                       value="3" class="form-check-input question-checkbox">
+                                            </td>
+                                            <td>
+                                                <div class="question-text">Write about four Diagrams Protocol LQP in Point</div>
+                                            </td>
+                                            <td>OX60</td>
+                                            <td>Transport Layer & Statistic Layer</td>
+                                            <td>
+                                                <span class="badge bg-warning text-dark">5</span>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-secondary">4/5</span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                <input type="checkbox" name="selected_questions" 
+                                                       value="4" class="form-check-input question-checkbox">
+                                            </td>
+                                            <td>
+                                                <div class="question-text">Write some applications of LQP</div>
+                                            </td>
+                                            <td>OX60</td>
+                                            <td>Transport Layer & Statistic Layer</td>
+                                            <td>
+                                                <span class="badge bg-success">2</span>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-secondary">3/5</span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                <input type="checkbox" name="selected_questions" 
+                                                       value="5" class="form-check-input question-checkbox">
+                                            </td>
+                                            <td>
+                                                <div class="question-text">Write about TCP features</div>
+                                            </td>
+                                            <td>OX60</td>
+                                            <td>Transport Layer & Statistic Layer</td>
+                                            <td>
+                                                <span class="badge bg-warning text-dark">5</span>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-secondary">4/5</span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                <input type="checkbox" name="selected_questions" 
+                                                       value="6" class="form-check-input question-checkbox">
+                                            </td>
+                                            <td>
+                                                <div class="question-text">Write a Error Control ?</div>
+                                            </td>
+                                            <td>OX60</td>
+                                            <td>Transport Layer & Statistic Layer</td>
+                                            <td>
+                                                <span class="badge bg-success">2</span>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-secondary">3/5</span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                <input type="checkbox" name="selected_questions" 
+                                                       value="7" class="form-check-input question-checkbox">
+                                            </td>
+                                            <td>
+                                                <div class="question-text">Write about TCP Computers Control</div>
+                                            </td>
+                                            <td>OX60</td>
+                                            <td>Transport Layer & Statistic Layer</td>
+                                            <td>
+                                                <span class="badge bg-warning text-dark">5</span>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-secondary">4/5</span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                <input type="checkbox" name="selected_questions" 
+                                                       value="8" class="form-check-input question-checkbox">
+                                            </td>
+                                            <td>
+                                                <div class="question-text">Explain Protocol Layering?</div>
+                                            </td>
+                                            <td>OX60</td>
+                                            <td>Introduction to Computer Networks</td>
+                                            <td>
+                                                <span class="badge bg-success">2</span>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-secondary">3/5</span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                <input type="checkbox" name="selected_questions" 
+                                                       value="9" class="form-check-input question-checkbox">
+                                            </td>
+                                            <td>
+                                                <div class="question-text">What are cost Of Computer Networks ?</div>
+                                            </td>
+                                            <td>OX60</td>
+                                            <td>Introduction to Computer Networks</td>
+                                            <td>
+                                                <span class="badge bg-success">2</span>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-secondary">3/5</span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                <input type="checkbox" name="selected_questions" 
+                                                       value="10" class="form-check-input question-checkbox">
+                                            </td>
+                                            <td>
+                                                <div class="question-text">What are Routes?</div>
+                                            </td>
+                                            <td>OX60</td>
+                                            <td>Introduction to Computer Networks</td>
+                                            <td>
+                                                <span class="badge bg-success">2</span>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-secondary">3/5</span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                <input type="checkbox" name="selected_questions" 
+                                                       value="11" class="form-check-input question-checkbox">
+                                            </td>
+                                            <td>
+                                                <div class="question-text">What are Node?</div>
+                                            </td>
+                                            <td>OX60</td>
+                                            <td>Introduction to Computer Networks</td>
+                                            <td>
+                                                <span class="badge bg-success">2</span>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-secondary">3/5</span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                <input type="checkbox" name="selected_questions" 
+                                                       value="12" class="form-check-input question-checkbox">
+                                            </td>
+                                            <td>
+                                                <div class="question-text">What are Dialogs?</div>
+                                            </td>
+                                            <td>OX60</td>
+                                            <td>Introduction to Computer Networks</td>
+                                            <td>
+                                                <span class="badge bg-success">2</span>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-secondary">3/5</span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                <input type="checkbox" name="selected_questions" 
+                                                       value="13" class="form-check-input question-checkbox">
+                                            </td>
+                                            <td>
+                                                <div class="question-text">What are Dialogs/About it?</div>
+                                            </td>
+                                            <td>OX60</td>
+                                            <td>Introduction to Computer Networks</td>
+                                            <td>
+                                                <span class="badge bg-success">2</span>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-secondary">3/5</span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                <input type="checkbox" name="selected_questions" 
+                                                       value="14" class="form-check-input question-checkbox">
+                                            </td>
+                                            <td>
+                                                <div class="question-text">What are the three criteria necessary for an effective and ...</div>
+                                            </td>
+                                            <td>OX60</td>
+                                            <td>Introduction to Computer Networks</td>
+                                            <td>
+                                                <span class="badge bg-success">2</span>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-secondary">3/5</span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                <input type="checkbox" name="selected_questions" 
+                                                       value="15" class="form-check-input question-checkbox">
+                                            </td>
+                                            <td>
+                                                <div class="question-text">What are not the fundamental characteristics determine the effectiveness of ...</div>
+                                            </td>
+                                            <td>OX60</td>
+                                            <td>Introduction to Computer Networks</td>
+                                            <td>
+                                                <span class="badge bg-success">2</span>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-secondary">3/5</span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                <input type="checkbox" name="selected_questions" 
+                                                       value="16" class="form-check-input question-checkbox">
+                                            </td>
+                                            <td>
+                                                <div class="question-text">Differentiate between CKB & KQMP model</div>
+                                            </td>
+                                            <td>OX60</td>
+                                            <td>Transport Layer & Statistic Layer</td>
+                                            <td>
+                                                <span class="badge bg-warning text-dark">5</span>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-secondary">4/5</span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                <input type="checkbox" name="selected_questions" 
+                                                       value="17" class="form-check-input question-checkbox">
+                                            </td>
+                                            <td>
+                                                <div class="question-text">Write about Error Control in Detail</div>
+                                            </td>
+                                            <td>OX60</td>
+                                            <td>Transport Layer & Statistic Layer</td>
+                                            <td>
+                                                <span class="badge bg-warning text-dark">5</span>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-secondary">4/5</span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                <input type="checkbox" name="selected_questions" 
+                                                       value="18" class="form-check-input question-checkbox">
+                                            </td>
+                                            <td>
+                                                <div class="question-text">What are different TCP Terms ?</div>
+                                            </td>
+                                            <td>OX60</td>
+                                            <td>Transport Layer & Statistic Layer</td>
+                                            <td>
+                                                <span class="badge bg-success">2</span>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-secondary">3/5</span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                <input type="checkbox" name="selected_questions" 
+                                                       value="19" class="form-check-input question-checkbox">
+                                            </td>
+                                            <td>
+                                                <div class="question-text">Write about Routes layer design issues</div>
+                                            </td>
+                                            <td>OX60</td>
+                                            <td>Transport Layer & Statistic Layer</td>
+                                            <td>
+                                                <span class="badge bg-warning text-dark">5</span>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-secondary">4/5</span>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>Selected Questions: </strong>
+                                <span id="selectedCount" class="badge bg-primary">0</span>
+                                <strong class="ms-3">Total Marks: </strong>
+                                <span id="totalMarks" class="badge bg-success">0</span>
+                            </div>
+                            <button type="submit" class="btn btn-primary btn-lg" id="generateBtn" disabled>
+                                <i class="fas fa-file-pdf me-2"></i>Generate PDF Paper
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.question-checkbox:checked + .question-text {
+    font-weight: bold;
+    color: #0d6efd;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const selectAll = document.getElementById('selectAll');
+    const checkboxes = document.querySelectorAll('.question-checkbox');
+    const selectedCount = document.getElementById('selectedCount');
+    const totalMarks = document.getElementById('totalMarks');
+    const generateBtn = document.getElementById('generateBtn');
+
+    function updateSelection() {
+        const selected = document.querySelectorAll('.question-checkbox:checked');
+        selectedCount.textContent = selected.length;
+        
+        let marks = 0;
+        selected.forEach(checkbox => {
+            const row = checkbox.closest('tr');
+            const marksBadge = row.querySelector('.badge');
+            marks += parseInt(marksBadge.textContent);
+        });
+        totalMarks.textContent = marks;
+        
+        generateBtn.disabled = selected.length === 0;
+    }
+
+    selectAll.addEventListener('change', function() {
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = this.checked;
+        });
+        updateSelection();
+    });
+
+    checkboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', updateSelection);
+    });
+
+    // Initial update
+    updateSelection();
+});
+</script>
+{% endblock %}

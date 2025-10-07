@@ -113,6 +113,26 @@
         .text-muted {
             color: rgba(255, 255, 255, 0.7) !important;
         }
+
+        /* Dropdown styles */
+        .dropdown-menu {
+            border: none;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+            padding: 8px;
+        }
+        
+        .dropdown-item {
+            border-radius: 6px;
+            padding: 8px 12px;
+            margin: 2px 0;
+            transition: all 0.3s ease;
+        }
+        
+        .dropdown-item:hover {
+            background-color: #f8f9fa;
+            transform: translateX(5px);
+        }
         
         @media (max-width: 768px) {
             .navbar-brand {
@@ -122,6 +142,10 @@
             .nav-pills {
                 margin-top: 15px;
             }
+            
+            .dropdown-menu {
+                border: 1px solid rgba(0, 0, 0, 0.1);
+            }
         }
     </style>
 </head>
@@ -130,7 +154,7 @@
     <!-- Navigation -->
     <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
         <div class="container">
-            <a class="navbar-brand" href="{% url 'index' %}">
+            <a class="navbar-brand" href="{% url 'dashboard' %}">
                 <i class="fas fa-file-alt"></i>
                 Question Generator
             </a>
@@ -142,13 +166,15 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="nav nav-pills ms-auto">
                     <li class="nav-item">
-                        <a class="nav-link" aria-current="page" href="{% url 'index' %}">
+                        <a class="nav-link" aria-current="page" href="{% url 'dashboard' %}">
                             <button class="btns">
                                 <i class="fas fa-home me-1"></i>Home
                             </button>
                         </a>
                     </li>
                     {% if user.is_authenticated %}
+                    <!-- Show role-specific navigation -->
+                    {% if user.role == 'staff' or user.role == 'admin' %}
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'myquestions' %}">
                             <button class="btns">
@@ -157,19 +183,85 @@
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'logout' %}">
+                        <a class="nav-link" href="{% url 'papergenerator' %}">
                             <button class="btns">
-                                <i class="fas fa-sign-out-alt me-1"></i>Logout
+                                <i class="fas fa-file-pdf me-1"></i>Create Question
                             </button>
                         </a>
                     </li>
-                    {% else %}
+                    {% endif %}
+                    
+                    {% if user.role == 'student' %}
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'login' %}">
+                        <a class="nav-link" href="{% url 'view_papers' %}">
+                            <button class="btns">
+                                <i class="fas fa-download me-1"></i>View Papers
+                            </button>
+                        </a>
+                    </li>
+                    {% endif %}
+                    
+                    {% if user.role == 'admin' %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'admin_dashboard' %}">
+                            <button class="btns">
+                                <i class="fas fa-crown me-1"></i>Admin
+                            </button>
+                        </a>
+                    </li>
+                    {% endif %}
+                    
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <button class="btns">
+                                <i class="fas fa-user me-1"></i>{{ user.username }}
+                            </button>
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li>
+                                <span class="dropdown-item-text small">
+                                    <i class="fas fa-user-tag me-2"></i>
+                                    {{ user.get_role_display }}
+                                </span>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item" href="{% url 'dashboard' %}">
+                                    <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{% url 'logout' %}">
+                                    <i class="fas fa-sign-out-alt me-2"></i>Logout
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                    {% else %}
+                    <!-- Login Dropdown for unauthenticated users -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
                             <button class="btns">
                                 <i class="fas fa-sign-in-alt me-1"></i>Login
                             </button>
                         </a>
+                        <ul class="dropdown-menu">
+                            <li>
+                                <a class="dropdown-item" href="{% url 'student_login' %}">
+                                    <i class="fas fa-user-graduate me-2 text-success"></i>Student Login
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{% url 'staff_login' %}">
+                                    <i class="fas fa-chalkboard-teacher me-2 text-info"></i>Staff Login
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{% url 'admin_login' %}">
+                                    <i class="fas fa-crown me-2 text-warning"></i>Admin Login
+                                </a>
+                            </li>
+                        </ul>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'register' %}">
@@ -184,6 +276,27 @@
         </div>
     </nav>
     
+    <!-- Messages Display -->
+    {% if messages %}
+    <div class="container mt-3">
+        {% for message in messages %}
+        <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} alert-dismissible fade show" role="alert">
+            {% if message.tags == 'success' %}
+            <i class="fas fa-check-circle me-2"></i>
+            {% elif message.tags == 'warning' %}
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            {% elif message.tags == 'error' or message.tags == 'danger' %}
+            <i class="fas fa-exclamation-circle me-2"></i>
+            {% else %}
+            <i class="fas fa-info-circle me-2"></i>
+            {% endif %}
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    
     <!-- Main Content -->
     <div class="main-content flex-grow-1">
         <div class="container">
@@ -197,7 +310,7 @@
         <div class="container">
             <div class="d-flex flex-wrap justify-content-between align-items-center py-3 border-top">
                 <div class="col-md-4 d-flex align-items-center">
-                    <a href="/" class="mb-3 me-2 mb-md-0 text-decoration-none lh-1">
+                    <a href="{% url 'dashboard' %}" class="mb-3 me-2 mb-md-0 text-decoration-none lh-1">
                         <i class="fas fa-file-alt fa-lg text-muted"></i>
                     </a>
                     <span class="mb-3 mb-md-0 text-muted">© 2025 Question Generator, Inc</span>
@@ -229,5 +342,18 @@
             </div>
         </div>
     </footer>
+
+    <script>
+        // Auto-dismiss alerts after 5 seconds
+        document.addEventListener('DOMContentLoaded', function() {
+            const alerts = document.querySelectorAll('.alert');
+            alerts.forEach(function(alert) {
+                setTimeout(function() {
+                    const bsAlert = new bootstrap.Alert(alert);
+                    bsAlert.close();
+                }, 5000);
+            });
+        });
+    </script>
 </body>
 </html>

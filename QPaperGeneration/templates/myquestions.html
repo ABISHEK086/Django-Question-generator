@@ -18,6 +18,15 @@
   </div>
 
   <div class="container py-4">
+    <!-- Back Button -->
+    <div class="row mb-4">
+      <div class="col-12">
+        <a href="{% url 'staff_dashboard' %}" class="btn btn-outline-secondary">
+          <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+        </a>
+      </div>
+    </div>
+
     <div class="row">
       <!-- Add Question Form -->
       <div class="col-lg-8">
@@ -303,12 +312,15 @@
             <div class="card-body">
               <h6 class="fw-semibold mb-3">Quick Actions</h6>
               <div class="d-grid gap-2">
-                <a href="{% url 'index' %}" class="btn btn-outline-primary btn-sm">
+                <a href="{% url 'papergenerator' %}" class="btn btn-outline-primary btn-sm">
                   <i class="fas fa-file-alt me-2"></i>Generate Paper
                 </a>
                 <button class="btn btn-outline-info btn-sm" onclick="addSampleQuestions()">
                   <i class="fas fa-magic me-2"></i>Add Sample Questions
                 </button>
+                <a href="{% url 'staff_dashboard' %}" class="btn btn-outline-secondary btn-sm">
+                  <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+                </a>
               </div>
             </div>
           </div>
@@ -443,6 +455,36 @@
       const submitBtn = document.getElementById('submitBtn');
       const originalButtonText = submitBtn.innerHTML;
       
+      // Sample questions data
+      const sampleQuestions = [
+        {
+          question: "Explain the fundamental theorem of calculus and provide a detailed proof with examples of its applications in real-world problems.",
+          subject: "Mathematics",
+          topic: "Calculus",
+          marks: "10",
+          difficulty: "4",
+          answer: "The fundamental theorem of calculus establishes the relationship between differentiation and integration..."
+        },
+        {
+          question: "Discuss the various methods of solving differential equations and compare their advantages and limitations.",
+          subject: "Mathematics", 
+          topic: "Differential Equations",
+          marks: "5",
+          difficulty: "3",
+          answer: "Differential equations can be solved using several methods including separation of variables, integrating factors..."
+        },
+        {
+          question: "Define and explain the concept of limits in calculus with suitable examples.",
+          subject: "Mathematics",
+          topic: "Calculus", 
+          marks: "2",
+          difficulty: "2",
+          answer: "Limits form the foundation of calculus, defining the behavior of functions as inputs approach certain values..."
+        }
+      ];
+
+      let currentSampleIndex = 0;
+      
       // Initialize all toasts when page loads
       const toastElList = document.querySelectorAll('.toast');
       const toastList = [...toastElList].map(toastEl => {
@@ -540,45 +582,32 @@
         });
       });
       
-      // Add sample questions function
+      // Load a specific sample question
+      function loadSampleQuestion(index) {
+        if (index >= 0 && index < sampleQuestions.length) {
+          const sample = sampleQuestions[index];
+          document.getElementById('questionText').value = sample.question;
+          document.getElementById('subjectInput').value = sample.subject;
+          document.getElementById('topicInput').value = sample.topic;
+          document.getElementById('marksInput').value = sample.marks;
+          document.getElementById('difficultySelect').value = sample.difficulty;
+          document.getElementById('answerText').value = sample.answer;
+          
+          showAlert(`Sample question ${index + 1} loaded! (${sample.marks} marks - ${sample.topic})`, 'info');
+          currentSampleIndex = index;
+        }
+      }
+      
+      // Add sample questions function - cycles through all samples
       window.addSampleQuestions = function() {
-        const sampleQuestions = [
-          {
-            question: "Explain the fundamental theorem of calculus and provide a detailed proof with examples of its applications in real-world problems.",
-            subject: "Mathematics",
-            topic: "Calculus",
-            marks: "10",
-            difficulty: "4",
-            answer: "The fundamental theorem of calculus establishes the relationship between differentiation and integration..."
-          },
-          {
-            question: "Discuss the various methods of solving differential equations and compare their advantages and limitations.",
-            subject: "Mathematics", 
-            topic: "Differential Equations",
-            marks: "5",
-            difficulty: "3",
-            answer: "Differential equations can be solved using several methods including separation of variables, integrating factors..."
-          },
-          {
-            question: "Define and explain the concept of limits in calculus with suitable examples.",
-            subject: "Mathematics",
-            topic: "Calculus", 
-            marks: "2",
-            difficulty: "2",
-            answer: "Limits form the foundation of calculus, defining the behavior of functions as inputs approach certain values..."
-          }
-        ];
+        // Cycle to next sample question
+        currentSampleIndex = (currentSampleIndex + 1) % sampleQuestions.length;
+        loadSampleQuestion(currentSampleIndex);
+      };
 
-        // Fill form with first sample question
-        const sample = sampleQuestions[0];
-        document.getElementById('questionText').value = sample.question;
-        document.getElementById('subjectInput').value = sample.subject;
-        document.getElementById('topicInput').value = sample.topic;
-        document.getElementById('marksInput').value = sample.marks;
-        document.getElementById('difficultySelect').value = sample.difficulty;
-        document.getElementById('answerText').value = sample.answer;
-
-        showAlert('Sample question loaded! Feel free to modify it before submitting.', 'info');
+      // Optional: Add function to load specific sample by number
+      window.loadSpecificSample = function(sampleNumber) {
+        loadSampleQuestion(sampleNumber - 1); // Convert to 0-based index
       };
     });
   </script>

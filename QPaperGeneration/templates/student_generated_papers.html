@@ -1,0 +1,197 @@
+<!-- QGen/QPaperGeneration/templates/student_generated_papers.html -->
+{% extends "layout.html" %}
+
+{% block title %}Your Generated Papers{% endblock %}
+
+{% block body %}
+  <!-- Success Message Toast -->
+  <div class="toast-container position-fixed top-0 end-0 p-3">
+    {% for message in messages %}
+      <div class="toast align-items-center text-white bg-{% if message.tags == 'success' %}success{% else %}danger{% endif %} border-0" 
+           role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="5000">
+        <div class="d-flex">
+          <div class="toast-body">
+            <i class="fas fa-{% if message.tags == 'success' %}check-circle{% else %}exclamation-circle{% endif %} me-2"></i>
+            {{ message }}
+          </div>
+          <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+
+<div class="container py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h2 fw-bold text-primary">
+                    <i class="fas fa-history me-2"></i>Your Generated Papers
+                </h1>
+                <div>
+                    <a href="{% url 'student_generate_custom_paper' %}" class="btn btn-success me-2">
+                        <i class="fas fa-plus-circle me-1"></i>Generate New Paper
+                    </a>
+                    <a href="{% url 'student_dashboard' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-1"></i>Back to Dashboard
+                    </a>
+                </div>
+            </div>
+
+            {% if generated_papers %}
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-file-alt me-2"></i>Papers You've Generated
+                    </h5>
+                    <span class="badge bg-primary">{{ generated_papers|length }} papers</span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-primary">
+                                <tr>
+                                    <th>Paper Title</th>
+                                    <th>Questions</th>
+                                    <th>Total Marks</th>
+                                    <th>Generated On</th>
+                                    <th>Last Updated</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for paper in generated_papers %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ paper.title }}</strong>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info">{{ paper.number_of_questions }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-success">{{ paper.total_marks }}</span>
+                                    </td>
+                                    <td>{{ paper.created_at|date:"M d, Y H:i" }}</td>
+                                    <td>{{ paper.updated_at|date:"M d, Y H:i" }}</td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <a href="{% url 'student_download_generated_paper' paper.id %}" 
+                                               class="btn btn-primary btn-sm" title="Download PDF">
+                                                <i class="fas fa-download"></i>
+                                            </a>
+                                            <a href="{% url 'student_update_generated_paper' paper.id %}" 
+                                               class="btn btn-warning btn-sm" title="Edit Paper">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <button type="button" 
+                                                    class="btn btn-danger btn-sm" 
+                                                    title="Delete Paper"
+                                                    data-bs-toggle="modal" 
+                                                    data-bs-target="#deleteModal"
+                                                    data-paper-id="{{ paper.id }}"
+                                                    data-paper-title="{{ paper.title }}">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-inbox display-1 text-muted mb-4"></i>
+                <h4 class="text-muted mb-3">No Generated Papers Yet</h4>
+                <p class="text-muted mb-4">You haven't generated any question papers yet.</p>
+                <a href="{% url 'student_generate_custom_paper' %}" class="btn btn-primary btn-lg">
+                    <i class="fas fa-plus-circle me-2"></i>Generate Your First Paper
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="deleteModalLabel">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Confirm Delete
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete the paper: <strong id="paperTitleToDelete"></strong>?</p>
+                <p class="text-muted small">This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form id="deleteForm" method="post" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash me-1"></i>Delete Paper
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.btn-group .btn {
+    margin: 0 2px;
+    border-radius: 0.375rem;
+}
+
+.table td {
+    vertical-align: middle;
+}
+
+.badge {
+    font-size: 0.75em;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize toasts
+    const toastElList = document.querySelectorAll('.toast');
+    const toastList = [...toastElList].map(toastEl => {
+        const toast = new bootstrap.Toast(toastEl);
+        toast.show();
+        return toast;
+    });
+
+    // Delete modal handler
+    const deleteModal = document.getElementById('deleteModal');
+    if (deleteModal) {
+        deleteModal.addEventListener('show.bs.modal', function(event) {
+            const button = event.relatedTarget;
+            const paperId = button.getAttribute('data-paper-id');
+            const paperTitle = button.getAttribute('data-paper-title');
+            
+            document.getElementById('paperTitleToDelete').textContent = paperTitle;
+            
+            // Set the form action
+            const deleteForm = document.getElementById('deleteForm');
+            deleteForm.action = "{% url 'student_delete_generated_paper' 0 %}".replace('0', paperId);
+        });
+    }
+
+    // Add hover effects to action buttons
+    const actionButtons = document.querySelectorAll('.btn-group .btn');
+    actionButtons.forEach(btn => {
+        btn.addEventListener('mouseenter', function() {
+            this.style.transform = 'scale(1.1)';
+        });
+        btn.addEventListener('mouseleave', function() {
+            this.style.transform = 'scale(1)';
+        });
+    });
+});
+</script>
+{% endblock %}

@@ -177,6 +177,9 @@
 
                 <!-- Submit Button -->
                 <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4 pt-3 border-top">
+                  <a href="{% url 'papergenerator' %}" class="btn btn-outline-secondary btn-lg px-4 py-2 me-2">
+                    <i class="fas fa-arrow-left me-2"></i>Back
+                  </a>
                   <button type="submit" id="generateBtn" class="btn btn-success btn-lg px-4 py-2 animate-button">
                     <i class="bi bi-gear me-2"></i>Generate Question Paper
                   </button>
@@ -274,6 +277,7 @@
         const form = document.getElementById('paperConfigForm');
         const generateBtn = document.getElementById('generateBtn');
         const originalButtonText = generateBtn.innerHTML;
+        let isSubmitting = false;
         
         // Select All Topics functionality
         const selectAllTopics = document.getElementById('selectAllTopics');
@@ -323,6 +327,11 @@
           // Prevent default submission for validation
           e.preventDefault();
           
+          // Prevent multiple submissions
+          if (isSubmitting) {
+            return;
+          }
+          
           // Validate that at least one topic is selected
           const topicsSelected = Array.from(topicCheckboxes).some(cb => cb.checked);
           const cosSelected = Array.from(coCheckboxes).some(cb => cb.checked);
@@ -337,14 +346,76 @@
             return;
           }
           
+          // Set submitting flag
+          isSubmitting = true;
+          
           // Show loading state
           generateBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Generating...';
           generateBtn.disabled = true;
           
-          // Submit the form after a brief delay to show the loading state
-          setTimeout(() => {
-            form.submit();
-          }, 500);
+          // Store the original form action
+          const originalAction = form.action;
+          const originalMethod = form.method;
+          
+          // Create a temporary iframe to handle the download
+          const iframe = document.createElement('iframe');
+          iframe.style.display = 'none';
+          document.body.appendChild(iframe);
+          
+          // Create a form specifically for the iframe
+          const iframeForm = document.createElement('form');
+          iframeForm.action = originalAction;
+          iframeForm.method = originalMethod;
+          iframeForm.target = iframe.name;
+          
+          // Copy all form data
+          const formData = new FormData(form);
+          for (let [name, value] of formData) {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = name;
+            input.value = value;
+            iframeForm.appendChild(input);
+          }
+          
+          // Add CSRF token
+          const csrfInput = document.createElement('input');
+          csrfInput.type = 'hidden';
+          csrfInput.name = 'csrfmiddlewaretoken';
+          csrfInput.value = document.querySelector('[name=csrfmiddlewaretoken]').value;
+          iframeForm.appendChild(csrfInput);
+          
+          document.body.appendChild(iframeForm);
+          
+          // Submit the form to the iframe
+          iframeForm.submit();
+          
+          // Set up a listener to detect when the download starts/completes
+          const cleanup = function() {
+            // Reset button state after a short delay to ensure download has started
+            setTimeout(() => {
+              generateBtn.innerHTML = originalButtonText;
+              generateBtn.disabled = false;
+              isSubmitting = false;
+              
+              // Clean up temporary elements
+              document.body.removeChild(iframeForm);
+              document.body.removeChild(iframe);
+            }, 2000); // 2 second delay to ensure download has started
+          };
+          
+          // Try to detect download completion (this is tricky with PDF downloads)
+          iframe.onload = cleanup;
+          
+          // Fallback: if iframe onload doesn't fire, reset after a timeout
+          setTimeout(cleanup, 5000);
+          
+          // Also add a click event listener to reset if user navigates away
+          window.addEventListener('beforeunload', function() {
+            generateBtn.innerHTML = originalButtonText;
+            generateBtn.disabled = false;
+            isSubmitting = false;
+          });
         });
         
         // Alert function
@@ -377,6 +448,13 @@
               checkbox.dispatchEvent(new Event('change'));
             }
           });
+        });
+        
+        // Reset button state if user navigates away
+        window.addEventListener('pageshow', function() {
+          generateBtn.innerHTML = originalButtonText;
+          generateBtn.disabled = false;
+          isSubmitting = false;
         });
       });
     </script>

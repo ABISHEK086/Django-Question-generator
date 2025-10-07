@@ -1,8 +1,11 @@
 import random
 import io
+import json
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_protect
 from django.db import IntegrityError
 from django.http import HttpResponseRedirect, FileResponse, HttpResponseForbidden
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
 from django.urls import reverse
 from django.core.paginator import Paginator
@@ -10,41 +13,1013 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
+from reportlab.lib.utils import simpleSplit
+from django.utils import timezone
+from django.db.models import Avg, Count
 
-from QPaperGeneration.models import User, QPattern, Subject, Topic
+from QPaperGeneration.models import User, QPattern, Subject, Topic, StudentGeneratedPaper
 
 # Create your views here.
 
-@login_required(login_url='login')
+@login_required(login_url='student_login')
+def dashboard(request):
+    """Main dashboard with role-based access cards"""
+    context = {}
+    
+    # Add stats for admin
+    if request.user.role == 'admin':
+        context.update({
+            'total_users': User.objects.count(),
+            'total_questions': QPattern.objects.count(),
+            'total_papers': QPattern.objects.filter(user=request.user).count(),
+            'total_subjects': Subject.objects.count(),
+        })
+    
+    return render(request, "dashboard.html", context)
+
+@login_required(login_url='student_login')
 def index(request):
-    return render(request, "index.html",{
-        "subjects": Subject.objects.all()
-    })
+    """Redirect to dashboard - keeping for backward compatibility"""
+    return HttpResponseRedirect(reverse("dashboard"))
 
+@login_required(login_url='student_login')
+def admin_dashboard(request):
+    """Admin-specific dashboard"""
+    if request.user.role != 'admin':
+        messages.error(request, "Access denied. Admin privileges required.")
+        return HttpResponseRedirect(reverse("dashboard"))
+    
+    # Admin statistics
+    total_users = User.objects.count()
+    total_staff = User.objects.filter(role='staff').count()
+    total_students = User.objects.filter(role='student').count()
+    total_questions = QPattern.objects.count()
+    total_subjects = Subject.objects.count()
+    
+    # Recent activities
+    recent_questions = QPattern.objects.all().order_by('-id')[:5]
+    recent_users = User.objects.all().order_by('-date_joined')[:5]
+    
+    context = {
+        'total_users': total_users,
+        'total_staff': total_staff,
+        'total_students': total_students,
+        'total_questions': total_questions,
+        'total_subjects': total_subjects,
+        'recent_questions': recent_questions,
+        'recent_users': recent_users,
+    }
+    
+    return render(request, "admin_dashboard.html", context)
 
-def login_view(request):
+@login_required(login_url='student_login')
+def user_management(request):
+    """Admin user management page"""
+    if request.user.role != 'admin':
+        messages.error(request, "Access denied. Admin privileges required.")
+        return HttpResponseRedirect(reverse("dashboard"))
+    
+    # Get all users with their statistics
+    users = User.objects.all().order_by('-date_joined')
+    
+    # Apply filters
+    role_filter = request.GET.get('role', '')
+    search_query = request.GET.get('search', '')
+    
+    if role_filter:
+        users = users.filter(role=role_filter)
+    
+    if search_query:
+        users = users.filter(
+            Q(username__icontains=search_query) | 
+            Q(email__icontains=search_query)
+        )
+    
+    # Calculate user statistics
+    total_users = users.count()
+    staff_count = users.filter(role='staff').count()
+    student_count = users.filter(role='student').count()
+    admin_count = users.filter(role='admin').count()
+    
+    # Get recent activity (last login)
+    active_today = users.filter(last_login__date=timezone.now().date()).count()
+    
+    # Pagination
+    paginator = Paginator(users, 15)  # 15 users per page
+    page_number = request.GET.get('page')
+    users_page = paginator.get_page(page_number)
+    
+    context = {
+        'users': users_page,
+        'total_users': total_users,
+        'staff_count': staff_count,
+        'student_count': student_count,
+        'admin_count': admin_count,
+        'active_today': active_today,
+        'role_filter': role_filter,
+        'search_query': search_query,
+    }
+    
+    return render(request, "user_management.html", context)
+
+@login_required(login_url='student_login')
+@csrf_protect
+def create_user(request):
+    """Create new user - admin only"""
+    if request.user.role != 'admin':
+        return JsonResponse({'success': False, 'error': 'Access denied. Admin privileges required.'})
+    
     if request.method == "POST":
-        # Attempt to sign user in
+        try:
+            username = request.POST.get('username')
+            email = request.POST.get('email')
+            password = request.POST.get('password')
+            role = request.POST.get('role', 'student')
+            
+            # Validate required fields
+            if not all([username, email, password]):
+                return JsonResponse({'success': False, 'error': 'All fields are required.'})
+            
+            # Check if username already exists
+            if User.objects.filter(username=username).exists():
+                return JsonResponse({'success': False, 'error': 'Username already taken.'})
+            
+            # Check if email already exists
+            if User.objects.filter(email=email).exists():
+                return JsonResponse({'success': False, 'error': 'Email already registered.'})
+            
+            # Create user
+            user = User.objects.create_user(username, email, password)
+            user.role = role
+            user.save()
+            
+            return JsonResponse({
+                'success': True, 
+                'message': f'User {username} created successfully as {role}.',
+                'user_id': user.id
+            })
+            
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': f'Error creating user: {str(e)}'})
+    
+    return JsonResponse({'success': False, 'error': 'Invalid request method.'})
+
+@login_required(login_url='student_login')
+@csrf_protect
+def update_user(request, user_id):
+    """Update user details - admin only"""
+    if request.user.role != 'admin':
+        return JsonResponse({'success': False, 'error': 'Access denied. Admin privileges required.'})
+    
+    try:
+        user = get_object_or_404(User, id=user_id)
+        
+        if request.method == "POST":
+            username = request.POST.get('username')
+            email = request.POST.get('email')
+            role = request.POST.get('role')
+            is_active = request.POST.get('is_active') == 'true'
+            
+            # Check if username is taken by another user
+            if username != user.username and User.objects.filter(username=username).exclude(id=user_id).exists():
+                return JsonResponse({'success': False, 'error': 'Username already taken.'})
+            
+            # Check if email is taken by another user
+            if email != user.email and User.objects.filter(email=email).exclude(id=user_id).exists():
+                return JsonResponse({'success': False, 'error': 'Email already registered.'})
+            
+            # Update user
+            user.username = username
+            user.email = email
+            user.role = role
+            user.is_active = is_active
+            user.save()
+            
+            return JsonResponse({
+                'success': True, 
+                'message': f'User {username} updated successfully.'
+            })
+            
+    except User.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'User not found.'})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': f'Error updating user: {str(e)}'})
+    
+    return JsonResponse({'success': False, 'error': 'Invalid request method.'})
+
+@login_required(login_url='student_login')
+@csrf_protect
+def delete_user(request, user_id):
+    """Delete user - admin only"""
+    if request.user.role != 'admin':
+        return JsonResponse({'success': False, 'error': 'Access denied. Admin privileges required.'})
+    
+    try:
+        user = get_object_or_404(User, id=user_id)
+        
+        # Prevent admin from deleting themselves
+        if user.id == request.user.id:
+            return JsonResponse({'success': False, 'error': 'You cannot delete your own account.'})
+        
+        username = user.username
+        user.delete()
+        
+        return JsonResponse({
+            'success': True, 
+            'message': f'User {username} deleted successfully.'
+        })
+        
+    except User.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'User not found.'})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': f'Error deleting user: {str(e)}'})
+
+@login_required(login_url='student_login')
+@csrf_protect
+def reset_user_password(request, user_id):
+    """Reset user password - admin only"""
+    if request.user.role != 'admin':
+        return JsonResponse({'success': False, 'error': 'Access denied. Admin privileges required.'})
+    
+    try:
+        user = get_object_or_404(User, id=user_id)
+        new_password = request.POST.get('new_password')
+        
+        if not new_password:
+            return JsonResponse({'success': False, 'error': 'New password is required.'})
+        
+        user.set_password(new_password)
+        user.save()
+        
+        return JsonResponse({
+            'success': True, 
+            'message': f'Password for {user.username} reset successfully.'
+        })
+        
+    except User.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'User not found.'})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': f'Error resetting password: {str(e)}'})
+
+@login_required(login_url='student_login')
+def staff_dashboard(request):
+    """Staff-specific dashboard"""
+    if request.user.role not in ['staff', 'admin']:
+        messages.error(request, "Access denied. Staff privileges required.")
+        return HttpResponseRedirect(reverse("dashboard"))
+    
+    # Staff statistics
+    my_questions = QPattern.objects.filter(user=request.user).count()
+    total_questions = QPattern.objects.count()
+    my_subjects = Subject.objects.all()
+    
+    # Recent questions by this staff
+    recent_my_questions = QPattern.objects.filter(user=request.user).order_by('-id')[:5]
+    
+    context = {
+        'my_questions': my_questions,
+        'total_questions': total_questions,
+        'subjects': my_subjects,
+        'recent_questions': recent_my_questions,
+    }
+    
+    return render(request, "staff_dashboard.html", context)
+
+@login_required(login_url='student_login')
+def student_dashboard(request):
+    """Student-specific dashboard"""
+    # Students can view all available question papers
+    available_papers = QPattern.objects.all().order_by('-id')[:10]
+    subjects = Subject.objects.all()
+    
+    # Get student's generated papers
+    student_generated_papers = StudentGeneratedPaper.objects.filter(student=request.user).order_by('-created_at')[:5]
+    
+    context = {
+        'available_papers': available_papers,
+        'subjects': subjects,
+        'student_generated_papers': student_generated_papers,
+    }
+    
+    return render(request, "student_dashboard.html", context)
+
+@login_required(login_url='student_login')
+def student_generated_papers(request):
+    """View for student to see their generated question papers"""
+    student_generated_papers = StudentGeneratedPaper.objects.filter(student=request.user).order_by('-created_at')
+    
+    context = {
+        'generated_papers': student_generated_papers,
+    }
+    
+    return render(request, "student_generated_papers.html", context)
+
+@login_required(login_url='student_login')
+def student_download_paper(request, paper_id):
+    """Download a single question paper as PDF for students"""
+    try:
+        # Get the specific question paper
+        paper = get_object_or_404(QPattern, id=paper_id)
+        
+        # Generate PDF
+        buffer = io.BytesIO()
+        p = canvas.Canvas(buffer, pagesize=A4)
+        width, height = A4
+        
+        # Set up the PDF content
+        p.setFont("Times-Bold", 20)
+        p.drawCentredString(width/2, height-50, "QUESTION PAPER")
+        p.setFont("Times-Roman", 12)
+        p.drawCentredString(width/2, height-70, f"Subject: {paper.subject.name}")
+        p.drawCentredString(width/2, height-85, f"Topic: {paper.topic.name}")
+        
+        # Draw line
+        p.line(50, height-100, width-50, height-100)
+        
+        # Question details
+        y_position = height - 120
+        p.setFont("Times-Bold", 12)
+        p.drawString(50, y_position, "Question Details:")
+        y_position -= 20
+        
+        p.setFont("Times-Roman", 12)
+        details = [
+            f"Marks: {paper.marks}",
+            f"Difficulty Level: {paper.difficulty}/5",
+            f"Created by: {paper.user.username}",
+            "",
+            "Question:",
+        ]
+        
+        for detail in details:
+            p.drawString(50, y_position, detail)
+            y_position -= 15
+        
+        # Add the question text with proper formatting
+        y_position -= 10
+        question_lines = simpleSplit(paper.question, "Times-Roman", 12, width-100)
+        for line in question_lines:
+            if y_position < 100:  # Check if we need a new page
+                p.showPage()
+                y_position = height - 50
+                p.setFont("Times-Roman", 12)
+            p.drawString(50, y_position, line)
+            y_position -= 15
+        
+        # Add instructions
+        y_position -= 20
+        instructions = [
+            "",
+            "Instructions:",
+            "• Answer the question completely",
+            "• Show all working steps",
+            "• Write neatly and legibly",
+            "• Time: 60 minutes",
+        ]
+        
+        for instruction in instructions:
+            if y_position < 100:
+                p.showPage()
+                y_position = height - 50
+                p.setFont("Times-Roman", 12)
+            p.drawString(50, y_position, instruction)
+            y_position -= 15
+        
+        p.showPage()
+        p.save()
+        buffer.seek(0)
+        
+        filename = f"Question_{paper.subject.name}_{paper.id}.pdf"
+        messages.success(request, "📄 Question paper downloaded successfully!")
+        return FileResponse(buffer, as_attachment=True, filename=filename)
+        
+    except Exception as e:
+        messages.error(request, f"❌ Error generating PDF: {str(e)}")
+        return HttpResponseRedirect(reverse("student_dashboard"))
+    
+
+
+@login_required(login_url='student_login')
+def student_generate_custom_paper(request):
+    """Generate a custom question paper for students from selected questions"""
+    if request.method == "POST":
+        try:
+            selected_questions = request.POST.getlist('selected_questions')
+            paper_title = request.POST.get('paper_title', 'Custom Practice Paper')
+            
+            if not selected_questions:
+                messages.warning(request, "⚠️ Please select at least one question.")
+                return HttpResponseRedirect(reverse("student_generate_custom_paper"))
+            
+            # Get the selected questions
+            questions = QPattern.objects.filter(id__in=selected_questions)
+            
+            # Calculate total marks
+            total_marks = sum(question.marks for question in questions)
+            
+            # Generate PDF
+            buffer = io.BytesIO()
+            p = canvas.Canvas(buffer, pagesize=A4)
+            width, height = A4
+            
+            # PDF header
+            p.setFont("Times-Bold", 24)
+            p.drawCentredString(width/2, height-50, paper_title.upper())
+            p.setFont("Times-Roman", 16)
+            p.drawCentredString(width/2, height-80, "Practice Question Paper")
+            p.drawCentredString(width/2, height-105, f"Total Marks: {total_marks}")
+            
+            # Draw line
+            p.line(50, height-120, width-50, height-120)
+            
+            # Instructions section
+            y_position = height - 140
+            p.setFont("Times-Bold", 14)
+            p.drawString(50, y_position, "General Instructions:")
+            y_position -= 25
+            
+            p.setFont("Times-Roman", 12)
+            instructions = [
+                "1. Answer all questions",
+                "2. Show all working steps", 
+                "3. Write neatly and legibly",
+                "4. Calculators are allowed",
+                "5. Time: 3 Hours",
+            ]
+            
+            for instruction in instructions:
+                p.drawString(60, y_position, instruction)
+                y_position -= 15
+            
+            y_position -= 20
+            
+            # Questions section
+            p.setFont("Times-Bold", 16)
+            p.drawString(50, y_position, "QUESTIONS")
+            y_position -= 30
+            
+            # Add questions to PDF
+            question_number = 1
+            for question in questions:
+                if y_position < 100:  # New page if needed
+                    p.showPage()
+                    y_position = height - 50
+                    p.setFont("Times-Roman", 12)
+                
+                # Question header
+                p.setFont("Times-Bold", 12)
+                p.drawString(50, y_position, f"Q{question_number}. [{question.marks} marks]")
+                y_position -= 15
+                
+                p.setFont("Times-Roman", 10)
+                p.drawString(50, y_position, f"Subject: {question.subject.name} | Topic: {question.topic.name}")
+                y_position -= 20
+                
+                # Question text
+                p.setFont("Times-Roman", 12)
+                question_lines = simpleSplit(question.question, "Times-Roman", 12, width-100)
+                for line in question_lines:
+                    if y_position < 100:
+                        p.showPage()
+                        y_position = height - 50
+                        p.setFont("Times-Roman", 12)
+                    p.drawString(60, y_position, line)
+                    y_position -= 15
+                
+                y_position -= 10  # Space between questions
+                question_number += 1
+            
+            p.showPage()
+            p.save()
+            buffer.seek(0)
+            
+            # Save to student's generated papers history
+            student_paper = StudentGeneratedPaper.objects.create(
+                student=request.user,
+                title=paper_title,
+                total_marks=total_marks,
+                number_of_questions=len(questions),
+            )
+            
+            # Store the question IDs as JSON for reference
+            question_ids = [q.id for q in questions]
+            student_paper.set_question_ids(question_ids)
+            student_paper.save()
+            
+            filename = f"Custom_Paper_{student_paper.id}.pdf"
+            messages.success(request, "📄 Custom question paper generated successfully!")
+            return FileResponse(buffer, as_attachment=True, filename=filename)
+            
+        except Exception as e:
+            messages.error(request, f"❌ Error generating custom paper: {str(e)}")
+            return HttpResponseRedirect(reverse("student_dashboard"))
+    else:
+        # GET request - show available questions for selection
+        available_questions = QPattern.objects.all().order_by('subject__name', 'marks')
+        subjects = Subject.objects.all()
+        
+        context = {
+            'available_questions': available_questions,
+            'subjects': subjects,
+        }
+        return render(request, "student_generate_paper.html", context)
+
+@login_required(login_url='student_login')
+def student_update_generated_paper(request, generated_paper_id):
+    """Update a student's generated question paper"""
+    try:
+        generated_paper = StudentGeneratedPaper.objects.get(id=generated_paper_id, student=request.user)
+        
+        if request.method == "POST":
+            selected_questions = request.POST.getlist('selected_questions')
+            paper_title = request.POST.get('paper_title', generated_paper.title)
+            
+            if not selected_questions:
+                messages.warning(request, "⚠️ Please select at least one question.")
+                return HttpResponseRedirect(reverse("student_update_generated_paper", args=[generated_paper_id]))
+            
+            # Get the selected questions
+            questions = QPattern.objects.filter(id__in=selected_questions)
+            
+            # Calculate total marks
+            total_marks = sum(question.marks for question in questions)
+            
+            # Update the generated paper
+            generated_paper.title = paper_title
+            generated_paper.total_marks = total_marks
+            generated_paper.number_of_questions = len(questions)
+            generated_paper.set_question_ids([q.id for q in questions])
+            generated_paper.save()
+            
+            # Generate updated PDF
+            buffer = io.BytesIO()
+            p = canvas.Canvas(buffer, pagesize=A4)
+            width, height = A4
+            
+            # PDF header
+            p.setFont("Times-Bold", 24)
+            p.drawCentredString(width/2, height-50, paper_title.upper())
+            p.setFont("Times-Roman", 16)
+            p.drawCentredString(width/2, height-80, "Practice Question Paper")
+            p.drawCentredString(width/2, height-105, f"Total Marks: {total_marks}")
+            
+            # Draw line
+            p.line(50, height-120, width-50, height-120)
+            
+            # Instructions section
+            y_position = height - 140
+            p.setFont("Times-Bold", 14)
+            p.drawString(50, y_position, "General Instructions:")
+            y_position -= 25
+            
+            p.setFont("Times-Roman", 12)
+            instructions = [
+                "1. Answer all questions",
+                "2. Show all working steps", 
+                "3. Write neatly and legibly",
+                "4. Calculators are allowed",
+                "5. Time: 3 Hours",
+            ]
+            
+            for instruction in instructions:
+                p.drawString(60, y_position, instruction)
+                y_position -= 15
+            
+            y_position -= 20
+            
+            # Questions section
+            p.setFont("Times-Bold", 16)
+            p.drawString(50, y_position, "QUESTIONS")
+            y_position -= 30
+            
+            # Add questions to PDF
+            question_number = 1
+            for question in questions:
+                if y_position < 100:  # New page if needed
+                    p.showPage()
+                    y_position = height - 50
+                    p.setFont("Times-Roman", 12)
+                
+                # Question header
+                p.setFont("Times-Bold", 12)
+                p.drawString(50, y_position, f"Q{question_number}. [{question.marks} marks]")
+                y_position -= 15
+                
+                p.setFont("Times-Roman", 10)
+                p.drawString(50, y_position, f"Subject: {question.subject.name} | Topic: {question.topic.name}")
+                y_position -= 20
+                
+                # Question text
+                p.setFont("Times-Roman", 12)
+                question_lines = simpleSplit(question.question, "Times-Roman", 12, width-100)
+                for line in question_lines:
+                    if y_position < 100:
+                        p.showPage()
+                        y_position = height - 50
+                        p.setFont("Times-Roman", 12)
+                    p.drawString(60, y_position, line)
+                    y_position -= 15
+                
+                y_position -= 10  # Space between questions
+                question_number += 1
+            
+            p.showPage()
+            p.save()
+            buffer.seek(0)
+            
+            filename = f"Updated_Paper_{generated_paper.id}.pdf"
+            messages.success(request, "🔄 Question paper updated successfully!")
+            return FileResponse(buffer, as_attachment=True, filename=filename)
+            
+        else:
+            # GET request - show form with current selection
+            available_questions = QPattern.objects.all().order_by('subject__name', 'marks')
+            current_question_ids = generated_paper.get_question_ids()
+            subjects = Subject.objects.all()
+            
+            context = {
+                'available_questions': available_questions,
+                'current_question_ids': current_question_ids,
+                'generated_paper': generated_paper,
+                'subjects': subjects,
+            }
+            return render(request, "student_update_paper.html", context)
+            
+    except StudentGeneratedPaper.DoesNotExist:
+        messages.error(request, "❌ Generated paper not found.")
+        return HttpResponseRedirect(reverse("student_generated_papers"))
+    except Exception as e:
+        messages.error(request, f"❌ Error updating paper: {str(e)}")
+        return HttpResponseRedirect(reverse("student_generated_papers"))
+
+@login_required(login_url='student_login')
+def student_delete_generated_paper(request, generated_paper_id):
+    """Delete a student's generated question paper"""
+    try:
+        generated_paper = StudentGeneratedPaper.objects.get(id=generated_paper_id, student=request.user)
+        paper_title = generated_paper.title
+        generated_paper.delete()
+        messages.success(request, f"🗑️ Question paper '{paper_title}' has been successfully deleted!")
+        
+    except StudentGeneratedPaper.DoesNotExist:
+        messages.error(request, "❌ Generated paper not found.")
+    
+    return HttpResponseRedirect(reverse("student_generated_papers"))
+
+@login_required(login_url='student_login')
+def student_download_generated_paper(request, generated_paper_id):
+    """Download a previously generated question paper"""
+    try:
+        generated_paper = StudentGeneratedPaper.objects.get(id=generated_paper_id, student=request.user)
+        
+        # Get the questions from stored IDs
+        questions = generated_paper.get_questions()
+        
+        # Regenerate PDF
+        buffer = io.BytesIO()
+        p = canvas.Canvas(buffer, pagesize=A4)
+        width, height = A4
+        
+        # PDF header
+        p.setFont("Times-Bold", 24)
+        p.drawCentredString(width/2, height-50, generated_paper.title.upper())
+        p.setFont("Times-Roman", 16)
+        p.drawCentredString(width/2, height-80, "Practice Question Paper")
+        p.drawCentredString(width/2, height-105, f"Total Marks: {generated_paper.total_marks}")
+        
+        # Draw line
+        p.line(50, height-120, width-50, height-120)
+        
+        # Instructions section
+        y_position = height - 140
+        p.setFont("Times-Bold", 14)
+        p.drawString(50, y_position, "General Instructions:")
+        y_position -= 25
+        
+        p.setFont("Times-Roman", 12)
+        instructions = [
+            "1. Answer all questions",
+            "2. Show all working steps", 
+            "3. Write neatly and legibly",
+            "4. Calculators are allowed",
+            "5. Time: 3 Hours",
+        ]
+        
+        for instruction in instructions:
+            p.drawString(60, y_position, instruction)
+            y_position -= 15
+        
+        y_position -= 20
+        
+        # Questions section
+        p.setFont("Times-Bold", 16)
+        p.drawString(50, y_position, "QUESTIONS")
+        y_position -= 30
+        
+        # Add questions to PDF
+        question_number = 1
+        for question in questions:
+            if y_position < 100:  # New page if needed
+                p.showPage()
+                y_position = height - 50
+                p.setFont("Times-Roman", 12)
+            
+            # Question header
+            p.setFont("Times-Bold", 12)
+            p.drawString(50, y_position, f"Q{question_number}. [{question.marks} marks]")
+            y_position -= 15
+            
+            p.setFont("Times-Roman", 10)
+            p.drawString(50, y_position, f"Subject: {question.subject.name} | Topic: {question.topic.name}")
+            y_position -= 20
+            
+            # Question text
+            p.setFont("Times-Roman", 12)
+            question_lines = simpleSplit(question.question, "Times-Roman", 12, width-100)
+            for line in question_lines:
+                if y_position < 100:
+                    p.showPage()
+                    y_position = height - 50
+                    p.setFont("Times-Roman", 12)
+                p.drawString(60, y_position, line)
+                y_position -= 15
+            
+            y_position -= 10  # Space between questions
+            question_number += 1
+        
+        p.showPage()
+        p.save()
+        buffer.seek(0)
+        
+        filename = f"Generated_Paper_{generated_paper.id}.pdf"
+        return FileResponse(buffer, as_attachment=True, filename=filename)
+        
+    except StudentGeneratedPaper.DoesNotExist:
+        messages.error(request, "❌ Generated paper not found.")
+        return HttpResponseRedirect(reverse("student_generated_papers"))
+    except Exception as e:
+        messages.error(request, f"❌ Error downloading generated paper: {str(e)}")
+        return HttpResponseRedirect(reverse("student_generated_papers"))
+
+@login_required(login_url='student_login')
+def staff_generate_paper(request):
+    """Staff-specific paper generation from question library"""
+    if request.user.role not in ['staff', 'admin']:
+        messages.error(request, "Access denied. Staff privileges required.")
+        return HttpResponseRedirect(reverse("dashboard"))
+    
+    if request.method == "POST":
+        try:
+            selected_questions = request.POST.getlist('selected_questions')
+            paper_title = request.POST.get('paper_title', 'Staff Generated Paper')
+            instructions = request.POST.get('instructions', '')
+            
+            if not selected_questions:
+                messages.warning(request, "⚠️ Please select at least one question.")
+                return HttpResponseRedirect(reverse("staff_generate_paper"))
+            
+            # Get the selected questions
+            questions = QPattern.objects.filter(id__in=selected_questions)
+            
+            # Calculate total marks and statistics
+            total_marks = sum(question.marks for question in questions)
+            difficulty_levels = [question.difficulty for question in questions]
+            avg_difficulty = sum(difficulty_levels) / len(difficulty_levels) if difficulty_levels else 0
+            
+            # Generate PDF
+            buffer = io.BytesIO()
+            p = canvas.Canvas(buffer, pagesize=A4)
+            width, height = A4
+            
+            # PDF header
+            p.setFont("Times-Bold", 24)
+            p.drawCentredString(width/2, height-50, paper_title.upper())
+            p.setFont("Times-Roman", 16)
+            p.drawCentredString(width/2, height-80, "Staff Generated Question Paper")
+            p.drawCentredString(width/2, height-105, f"Total Marks: {total_marks}")
+            
+            # Draw line
+            p.line(50, height-120, width-50, height-120)
+            
+            # Paper statistics
+            y_position = height - 140
+            p.setFont("Times-Bold", 12)
+            p.drawString(50, y_position, "Paper Statistics:")
+            y_position -= 20
+            
+            p.setFont("Times-Roman", 10)
+            stats = [
+                f"Total Questions: {len(questions)}",
+                f"Average Difficulty: {avg_difficulty:.1f}/5",
+                f"Generated by: {request.user.username}",
+                f"Date: {timezone.now().strftime('%Y-%m-%d %H:%M')}"
+            ]
+            
+            for stat in stats:
+                p.drawString(60, y_position, stat)
+                y_position -= 15
+            
+            y_position -= 10
+            
+            # Instructions section
+            if instructions:
+                p.setFont("Times-Bold", 12)
+                p.drawString(50, y_position, "Instructions:")
+                y_position -= 20
+                
+                p.setFont("Times-Roman", 10)
+                instruction_lines = simpleSplit(instructions, "Times-Roman", 10, width-100)
+                for line in instruction_lines:
+                    if y_position < 100:
+                        p.showPage()
+                        y_position = height - 50
+                        p.setFont("Times-Roman", 10)
+                    p.drawString(60, y_position, line)
+                    y_position -= 12
+                
+                y_position -= 10
+            
+            # General instructions
+            p.setFont("Times-Bold", 12)
+            p.drawString(50, y_position, "General Instructions:")
+            y_position -= 20
+            
+            p.setFont("Times-Roman", 10)
+            general_instructions = [
+                "1. Answer all questions",
+                "2. Show all working steps", 
+                "3. Write neatly and legibly",
+                "4. Calculators are allowed unless specified",
+                "5. Time: As per examination guidelines",
+            ]
+            
+            for instruction in general_instructions:
+                if y_position < 100:
+                    p.showPage()
+                    y_position = height - 50
+                    p.setFont("Times-Roman", 10)
+                p.drawString(60, y_position, instruction)
+                y_position -= 12
+            
+            y_position -= 20
+            
+            # Questions section
+            p.setFont("Times-Bold", 16)
+            p.drawString(50, y_position, "QUESTIONS")
+            y_position -= 30
+            
+            # Add questions to PDF
+            question_number = 1
+            for question in questions:
+                if y_position < 100:  # New page if needed
+                    p.showPage()
+                    y_position = height - 50
+                    p.setFont("Times-Roman", 12)
+                
+                # Question header with marks and difficulty
+                p.setFont("Times-Bold", 12)
+                p.drawString(50, y_position, f"Q{question_number}. [{question.marks} marks]")
+                p.setFont("Times-Roman", 10)
+                p.drawString(width-150, y_position, f"Difficulty: {question.difficulty}/5")
+                y_position -= 15
+                
+                # Subject and topic
+                p.drawString(50, y_position, f"Subject: {question.subject.name} | Topic: {question.topic.name}")
+                y_position -= 20
+                
+                # Question text
+                p.setFont("Times-Roman", 12)
+                question_lines = simpleSplit(question.question, "Times-Roman", 12, width-100)
+                for line in question_lines:
+                    if y_position < 100:
+                        p.showPage()
+                        y_position = height - 50
+                        p.setFont("Times-Roman", 12)
+                    p.drawString(60, y_position, line)
+                    y_position -= 15
+                
+                # Answer space
+                y_position -= 10
+                if y_position < 150:
+                    p.showPage()
+                    y_position = height - 50
+                p.line(50, y_position, width-50, y_position)
+                y_position -= 20
+                
+                question_number += 1
+            
+            p.showPage()
+            p.save()
+            buffer.seek(0)
+            
+            filename = f"Staff_Generated_Paper_{timezone.now().strftime('%Y%m%d_%H%M')}.pdf"
+            messages.success(request, "📄 Question paper generated successfully!")
+            return FileResponse(buffer, as_attachment=True, filename=filename)
+            
+        except Exception as e:
+            messages.error(request, f"❌ Error generating paper: {str(e)}")
+            return HttpResponseRedirect(reverse("staff_generate_paper"))
+    else:
+        # GET request - show available questions for selection
+        if request.user.role == 'admin':
+            available_questions = QPattern.objects.all().order_by('subject__name', 'marks')
+        else:
+            available_questions = QPattern.objects.filter(user=request.user).order_by('subject__name', 'marks')
+        
+        subjects = Subject.objects.all()
+        
+        context = {
+            'available_questions': available_questions,
+            'subjects': subjects,
+        }
+        return render(request, "staff_generate_paper.html", context)
+
+def student_login(request):
+    """Login page specifically for students"""
+    if request.method == "POST":
         username = request.POST["username"]
         password = request.POST["password"]
         user = authenticate(request, username=username, password=password)
 
-        # Check if authentication successful
+        if user is not None and user.role == 'student':
+            login(request, user)
+            messages.success(request, f"Welcome back, {username}! (Student)")
+            return HttpResponseRedirect(reverse("student_dashboard"))
+        else:
+            return render(request, "student_login.html", {
+                "message": "Invalid credentials or not a student account."
+            })
+    else:
+        return render(request, "student_login.html")
+
+def staff_login(request):
+    """Login page specifically for staff"""
+    if request.method == "POST":
+        username = request.POST["username"]
+        password = request.POST["password"]
+        user = authenticate(request, username=username, password=password)
+
+        if user is not None and user.role in ['staff', 'admin']:
+            login(request, user)
+            role_display = "Admin" if user.role == 'admin' else "Staff"
+            messages.success(request, f"Welcome back, {username}! ({role_display})")
+            return HttpResponseRedirect(reverse("staff_dashboard"))
+        else:
+            return render(request, "staff_login.html", {
+                "message": "Invalid credentials or not a staff/admin account."
+            })
+    else:
+        return render(request, "staff_login.html")
+
+def admin_login(request):
+    """Login page specifically for admin"""
+    if request.method == "POST":
+        username = request.POST["username"]
+        password = request.POST["password"]
+        user = authenticate(request, username=username, password=password)
+
+        if user is not None and user.role == 'admin':
+            login(request, user)
+            messages.success(request, f"Welcome back, {username}! (Administrator)")
+            return HttpResponseRedirect(reverse("admin_dashboard"))
+        else:
+            return render(request, "admin_login.html", {
+                "message": "Invalid credentials or not an admin account."
+            })
+    else:
+        return render(request, "admin_login.html")
+
+def universal_login(request):
+    """Universal login - redirects to appropriate dashboard"""
+    if request.method == "POST":
+        username = request.POST["username"]
+        password = request.POST["password"]
+        user = authenticate(request, username=username, password=password)
+
         if user is not None:
             login(request, user)
-            messages.success(request, f"Welcome back, {username}!")
-            return HttpResponseRedirect(reverse("index"))
+            role_display = user.get_role_display()
+            messages.success(request, f"Welcome back, {username}! ({role_display})")
+            
+            # Redirect based on role
+            if user.role == 'admin':
+                return HttpResponseRedirect(reverse("admin_dashboard"))
+            elif user.role == 'staff':
+                return HttpResponseRedirect(reverse("staff_dashboard"))
+            else:
+                return HttpResponseRedirect(reverse("student_dashboard"))
         else:
-            return render(request, "login.html", {
+            return render(request, "universal_login.html", {
                 "message": "Invalid username and/or password."
             })
     else:
-        return render(request, "login.html")
+        return render(request, "universal_login.html")
 
 def register(request):
     if request.method == "POST":
         username = request.POST["username"]
         email = request.POST["email"]
+        role = request.POST.get("role", "student")  # Default to student
 
         # Ensure password matches confirmation
         password = request.POST["password"]
@@ -57,52 +1032,90 @@ def register(request):
         # Attempt to create new user
         try:
             user = User.objects.create_user(username, email, password)
+            user.role = role
             user.save()
         except IntegrityError:
             return render(request, "register.html", {
                 "message": "Username already taken."
             })
         login(request, user)
-        messages.success(request, f"Account created successfully! Welcome, {username}!")
-        return HttpResponseRedirect(reverse("index"))
+        messages.success(request, f"Account created successfully! Welcome, {username}! ({user.get_role_display()})")
+        return HttpResponseRedirect(reverse("dashboard"))
     else:
         return render(request, "register.html")
+    
+def student_register(request):
+    """Student-specific registration page"""
+    if request.method == "POST":
+        username = request.POST["username"]
+        email = request.POST["email"]
+        
+        # Ensure password matches confirmation
+        password = request.POST["password"]
+        confirmation = request.POST["confirmation"]
+        if password != confirmation:
+            return render(request, "student_register.html", {
+                "message": "Passwords must match."
+            })
+
+        # Attempt to create new student user
+        try:
+            user = User.objects.create_user(username, email, password)
+            user.role = 'student'  # Force student role
+            user.save()
+        except IntegrityError:
+            return render(request, "student_register.html", {
+                "message": "Username already taken."
+            })
+        
+        login(request, user)
+        messages.success(request, f"Account created successfully! Welcome, {username}! (Student)")
+        return HttpResponseRedirect(reverse("student_dashboard"))
+    else:
+        return render(request, "student_register.html")
 
 def logout_view(request):
     logout(request)
     messages.info(request, "You have been logged out successfully.")
-    return HttpResponseRedirect(reverse("index"))
+    # Redirect to dashboard which shows all role options
+    return HttpResponseRedirect(reverse("dashboard"))
 
+@login_required(login_url='student_login')
 def myquestions(request):
+    """Question management - only for staff and admin"""
+    if request.user.role not in ['staff', 'admin']:
+        messages.error(request, "Access denied. Staff privileges required to manage questions.")
+        return HttpResponseRedirect(reverse("dashboard"))
+    
     if request.method == "POST":
         user = request.user
-        subject = request.POST["subject"]
-        topic = request.POST["topic"]
+        subject_name = request.POST["subject"]
+        topic_name = request.POST["topic"]
         marks = request.POST["marks"]
         difficulty = request.POST["difficulty"]
-        question = request.POST["question"]
-        answer = request.POST["answer"]
+        question_text = request.POST["question"]
+        answer = request.POST.get("answer", "")
 
         try:
-            # SIMPLIFIED: No created_by field needed
-            cursub, subcr = Subject.objects.get_or_create(name=subject)
+            # Get or create subject
+            subject_obj, subject_created = Subject.objects.get_or_create(name=subject_name)
             
-            # SIMPLIFIED: No created_by field needed
-            curtop, topcr = Topic.objects.get_or_create(
-                name=topic,
-                sub=cursub
+            # Get or create topic
+            topic_obj, topic_created = Topic.objects.get_or_create(
+                name=topic_name,
+                sub=subject_obj
             )
             
+            # Create the question
             qamodel = QPattern.objects.create(
                 user=user, 
-                topic=curtop, 
-                subject=cursub,
-                question=question, 
+                topic=topic_obj, 
+                subject=subject_obj,
+                question=question_text, 
                 answer=answer, 
-                marks=marks, 
-                difficulty=difficulty
+                marks=int(marks), 
+                difficulty=int(difficulty)
             )
-            qamodel.save()
             
             messages.success(request, "✅ Question added successfully!")
             return HttpResponseRedirect(reverse("myquestions"))
@@ -112,14 +1125,37 @@ def myquestions(request):
             return HttpResponseRedirect(reverse("myquestions"))
             
     elif request.method == "GET":
-        questionandanswers = QPattern.objects.all()
-        return render(request, "myquestions.html",{
-            "questions": questionandanswers,
+        if request.user.role == 'admin':
+            # Admin can see all questions
+            questions = QPattern.objects.all().order_by('-id')
+        else:
+            # Staff can only see their own questions
+            questions = QPattern.objects.filter(user=request.user).order_by('-id')
+            
+        return render(request, "myquestions.html", {
+            "questions": questions,
         })
     else:
         return HttpResponseForbidden("Method not allowed")
 
+@login_required(login_url='student_login')
+def papergenerator(request):
+    """Paper generation - only for staff and admin"""
+    if request.user.role not in ['staff', 'admin']:
+        messages.error(request, "Access denied. Staff privileges required to generate papers.")
+        return HttpResponseRedirect(reverse("dashboard"))
+    
+    return render(request, "index.html",{
+        "subjects": Subject.objects.all()
+    })
+
+@login_required(login_url='student_login')
 def papergen1(request):
+    """Paper generation step 1 - only for staff and admin"""
+    if request.user.role not in ['staff', 'admin']:
+        messages.error(request, "Access denied. Staff privileges required.")
+        return HttpResponseRedirect(reverse("dashboard"))
+        
     if request.method == "POST":
         checkboxstatus = False
         if request.POST.get('marksboxcheck', False) == 'on':
@@ -128,14 +1164,26 @@ def papergen1(request):
         # Validate if there are enough questions for the selected paper type
         subsel = request.POST["subsel"]
         ptype = request.POST["ptype"]
-        topics = Topic.objects.filter(sub=Subject.objects.get(pk=subsel))
+        
+        # Get the subject object
+        subject = get_object_or_404(Subject, pk=subsel)
+        topics = Topic.objects.filter(sub=subject)
         
         # Count available questions
-        total_questions = QPattern.objects.filter(subject_id=subsel).count()
-        two_mark_questions = QPattern.objects.filter(subject_id=subsel, marks=2).count()
-        five_mark_questions = QPattern.objects.filter(subject_id=subsel, marks=5).count()
-        ten_mark_questions = QPattern.objects.filter(subject_id=subsel, marks=10).count()
+        if request.user.role == 'admin':
+            # Admin can use all questions
+            total_questions = QPattern.objects.filter(subject_id=subsel).count()
+            two_mark_questions = QPattern.objects.filter(subject_id=subsel, marks=2).count()
+            five_mark_questions = QPattern.objects.filter(subject_id=subsel, marks=5).count()
+            ten_mark_questions = QPattern.objects.filter(subject_id=subsel, marks=10).count()
+        else:
+            # Staff can only use their own questions
+            total_questions = QPattern.objects.filter(subject_id=subsel, user=request.user).count()
+            two_mark_questions = QPattern.objects.filter(subject_id=subsel, marks=2, user=request.user).count()
+            five_mark_questions = QPattern.objects.filter(subject_id=subsel, marks=5, user=request.user).count()
+            ten_mark_questions = QPattern.objects.filter(subject_id=subsel, marks=10, user=request.user).count()
         
+        # Validation messages
         if ptype == '1' and (two_mark_questions < 6 or five_mark_questions < 4):
             messages.warning(request, f"⚠️ Insufficient questions for IA Paper. Required: 6+ 2-mark questions (have {two_mark_questions}), 4+ 5-mark questions (have {five_mark_questions})")
         elif ptype == '2' and (five_mark_questions < 4 or ten_mark_questions < 10):
@@ -143,9 +1191,10 @@ def papergen1(request):
         else:
             messages.info(request, f"📊 Available: {two_mark_questions} 2-mark, {five_mark_questions} 5-mark, {ten_mark_questions} 10-mark questions")
         
+        # Render index2.html with the context
         return render(request, "index2.html",{
             "heading": request.POST["heading"],
-            "extradetails": request.POST["extradetails"],
+            "extradetails": request.POST.get("extradetails", ""),
             "marksboxcheck": checkboxstatus,
             "ptype": ptype,
             "subsel": subsel,
@@ -154,7 +1203,13 @@ def papergen1(request):
     else:
         return HttpResponseForbidden("Method not allowed")
 
+@login_required(login_url='student_login')
 def papergen2(request):
+    """Paper generation step 2 - only for staff and admin"""
+    if request.user.role not in ['staff', 'admin']:
+        messages.error(request, "Access denied. Staff privileges required.")
+        return HttpResponseRedirect(reverse("dashboard"))
+        
     try:
         title = request.POST["heading"]
         subTitle = request.POST.get("extradetails", "")
@@ -168,13 +1223,20 @@ def papergen2(request):
         sevmqs = []
         tens = []
         
-        # Collect questions for selected topics
+        # Collect questions for selected topics based on user role
         for topic in topics:
             topic_obj = Topic.objects.filter(id=topic).first()
             if topic_obj:
-                twomqs.extend(list(QPattern.objects.filter(marks=2, topic=topic_obj)))
-                sevmqs.extend(list(QPattern.objects.filter(marks=5, topic=topic_obj)))
-                tens.extend(list(QPattern.objects.filter(marks=10, topic=topic_obj)))
+                if request.user.role == 'admin':
+                    # Admin can use all questions
+                    twomqs.extend(list(QPattern.objects.filter(marks=2, topic=topic_obj)))
+                    sevmqs.extend(list(QPattern.objects.filter(marks=5, topic=topic_obj)))
+                    tens.extend(list(QPattern.objects.filter(marks=10, topic=topic_obj)))
+                else:
+                    # Staff can only use their own questions
+                    twomqs.extend(list(QPattern.objects.filter(marks=2, topic=topic_obj, user=request.user)))
+                    sevmqs.extend(list(QPattern.objects.filter(marks=5, topic=topic_obj, user=request.user)))
+                    tens.extend(list(QPattern.objects.filter(marks=10, topic=topic_obj, user=request.user)))
 
         # Prepare the questions based on the new format
         qLines = []
@@ -323,3 +1385,102 @@ def papergen2(request):
         p.save()
         buffer.seek(0)
         return FileResponse(buffer, as_attachment=True, filename='Error_Report.pdf')
+
+@login_required(login_url='student_login')
+def view_papers(request):
+    """View available papers - accessible to all roles"""
+    # Get all papers with related data
+    papers = QPattern.objects.select_related('subject', 'topic', 'user').all().order_by('-id')
+    
+    # Apply filters if any
+    subject_filter = request.GET.get('subject')
+    if subject_filter:
+        papers = papers.filter(subject__name__icontains=subject_filter)
+    
+    # Calculate statistics for the view
+    total_papers = papers.count()
+    total_questions = QPattern.objects.count()
+    average_marks = QPattern.objects.aggregate(Avg('marks'))['marks__avg'] or 0
+    
+    # Since there's no created_at field, use total count for recent papers
+    recent_papers = total_papers
+    
+    # Get marks distribution
+    marks_distribution = {
+        '2_marks': QPattern.objects.filter(marks=2).count(),
+        '5_marks': QPattern.objects.filter(marks=5).count(),
+        '10_marks': QPattern.objects.filter(marks=10).count(),
+    }
+    
+    # Pagination
+    paginator = Paginator(papers, 10)  # Show 10 papers per page
+    page_number = request.GET.get('page')
+    papers_page = paginator.get_page(page_number)
+    
+    context = {
+        'papers': papers_page,
+        'subjects': Subject.objects.all(),
+        'total_papers': total_papers,
+        'total_questions': total_questions,
+        'average_marks': round(average_marks, 1),
+        'recent_papers': recent_papers,
+        'marks_distribution': marks_distribution,
+    }
+    
+    return render(request, "view_papers.html", context)
+
+@login_required(login_url='student_login')
+def view_paper_detail(request, paper_id):
+    """View detailed information about a specific paper"""
+    paper = get_object_or_404(QPattern, id=paper_id)
+    
+    context = {
+        'paper': paper,
+    }
+    
+    return render(request, "view_paper_detail.html", context)
+
+@login_required(login_url='student_login')
+def download_paper_pdf(request, paper_id):
+    """Download a specific paper as PDF - using existing student_download_paper functionality"""
+    try:
+        # Reuse the existing student_download_paper function
+        return student_download_paper(request, paper_id)
+    except Exception as e:
+        messages.error(request, f"❌ Error downloading paper: {str(e)}")
+        return HttpResponseRedirect(reverse("view_papers"))
+
+@login_required(login_url='student_login')
+def delete_paper(request, paper_id):
+    """Delete a paper - only for staff and admin"""
+    if request.user.role not in ['staff', 'admin']:
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'success': False, 'error': 'Access denied. Staff privileges required.'})
+        messages.error(request, "Access denied. Staff privileges required.")
+        return HttpResponseRedirect(reverse("view_papers"))
+    
+    try:
+        paper = get_object_or_404(QPattern, id=paper_id)
+        
+        # Check if user owns the paper or is admin
+        if request.user.role != 'admin' and paper.user != request.user:
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': False, 'error': 'Access denied. You can only delete your own questions.'})
+            messages.error(request, "Access denied. You can only delete your own questions.")
+            return HttpResponseRedirect(reverse("view_papers"))
+        
+        paper_title = paper.question[:50] + "..." if len(paper.question) > 50 else paper.question
+        paper.delete()
+        
+        # Return JSON response for AJAX requests
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'success': True, 'message': f"Question '{paper_title}' has been successfully deleted!"})
+        
+        messages.success(request, f"🗑️ Question '{paper_title}' has been successfully deleted!")
+        
+    except QPattern.DoesNotExist:
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'success': False, 'error': 'Question not found.'})
+        messages.error(request, "❌ Question not found.")
+    
+    return HttpResponseRedirect(reverse("view_papers"))

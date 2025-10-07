@@ -10,6 +10,15 @@
         {% endif %}
         
         <div class="container py-4">
+            <!-- Back Button -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <a href="{% url 'staff_dashboard' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+                    </a>
+                </div>
+            </div>
+
             <div class="row justify-content-center">
                 <div class="col-lg-10">
                     <div class="page-header mb-4">
@@ -19,7 +28,8 @@
                     
                     <div class="card shadow-lg border-0 rounded-3 animate-fade-in">
                         <div class="card-body p-4 p-md-5">
-                            <form id="paperForm" action="{% url 'papergenerator' %}" method="post">
+                            <!-- CHANGED: form action from papergenerator to papergen1 -->
+                            <form id="paperForm" action="{% url 'papergen1' %}" method="post">
                                 {% csrf_token %}
                                 
                                 <!-- Heading Section -->
@@ -52,8 +62,8 @@
                                             <i class="bi bi-layout-text-sidebar me-2"></i>Paper Format
                                         </label>
                                         <select class="form-select border-2 py-2" name="ptype" id="ptype">
-                                            <option value=1>Unit Test Pattern - 20 Marks</option>
-                                            <option value=2>Semester Pattern - 80 Marks</option>
+                                            <option value=1>Unit Test Pattern - 25 Marks</option>
+                                            <option value=2>Semester Pattern - 100 Marks</option>
                                         </select>
                                         <div class="form-text">Select the appropriate examination pattern</div>
                                     </div>
@@ -71,9 +81,22 @@
                                         <div class="form-text">Choose the subject for your question paper</div>
                                     </div>
                                 </div>
+
+                                <!-- Marks Checkbox -->
+                                <div class="mb-4">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="marksboxcheck" id="marksboxcheck">
+                                        <label class="form-check-label fw-medium" for="marksboxcheck">
+                                            Include marks distribution in the paper
+                                        </label>
+                                    </div>
+                                </div>
                                 
                                 <!-- Submit Button -->
                                 <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                                    {% comment %} <a href="{% url 'staff_dashboard' %}" class="btn btn-outline-secondary btn-lg px-4 py-2 me-2">
+                                        <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+                                    </a> {% endcomment %}
                                     <button type="submit" id="submitBtn" class="btn btn-primary btn-lg px-4 py-2 animate-button">
                                         <i class="bi bi-arrow-right-circle me-2"></i>Continue to Next Step
                                     </button>
