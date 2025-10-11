@@ -15,7 +15,7 @@ from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 from reportlab.lib.utils import simpleSplit
 from django.utils import timezone
-from django.db.models import Avg, Count
+from django.db.models import Avg, Count, Sum
 
 from QPaperGeneration.models import User, QPattern, Subject, Topic, StudentGeneratedPaper
 
@@ -397,9 +397,425 @@ def student_download_paper(request, paper_id):
         messages.error(request, f"❌ Error generating PDF: {str(e)}")
         return HttpResponseRedirect(reverse("student_dashboard"))
     
-
+@login_required(login_url='student_login')
+def analytics_dashboard(request):
+    """Admin analytics dashboard with detailed statistics"""
+    if request.user.role != 'admin':
+        messages.error(request, "Access denied. Admin privileges required.")
+        return HttpResponseRedirect(reverse("dashboard"))
+    
+    try:
+        # User Statistics
+        total_users = User.objects.count()
+        users_today = User.objects.filter(date_joined__date=timezone.now().date()).count()
+        users_this_week = User.objects.filter(date_joined__gte=timezone.now() - timezone.timedelta(days=7)).count()
+        users_this_month = User.objects.filter(date_joined__gte=timezone.now() - timezone.timedelta(days=30)).count()
+        
+        # Role Distribution
+        role_distribution = {
+            'students': User.objects.filter(role='student').count(),
+            'staff': User.objects.filter(role='staff').count(),
+            'admins': User.objects.filter(role='admin').count(),
+        }
+        
+        # Question Statistics
+        total_questions = QPattern.objects.count()
+        
+        # Since QPattern doesn't have created_at, we'll use total counts
+        questions_today = total_questions  # Placeholder
+        questions_this_week = total_questions  # Placeholder
+        questions_this_month = total_questions  # Placeholder
+        
+        # Marks Distribution
+        marks_distribution = {
+            '2_marks': QPattern.objects.filter(marks=2).count(),
+            '5_marks': QPattern.objects.filter(marks=5).count(),
+            '10_marks': QPattern.objects.filter(marks=10).count(),
+        }
+        
+        # Difficulty Distribution
+        difficulty_distribution = {}
+        for i in range(1, 6):
+            difficulty_distribution[f'level_{i}'] = QPattern.objects.filter(difficulty=i).count()
+        
+        # CORRECTED: Subject Statistics - Use the correct related_name 'sub'
+        subjects = Subject.objects.annotate(
+            question_count=Count('sub'),  # Use 'sub' which is the related_name from QPattern
+            avg_difficulty=Avg('sub__difficulty'),
+            avg_marks=Avg('sub__marks')
+        ).order_by('-question_count')
+        
+        # Top Contributors (Users with most questions)
+        top_contributors = User.objects.annotate(
+            question_count=Count('usr')  # Use 'usr' which is the related_name from QPattern
+        ).filter(question_count__gt=0).order_by('-question_count')[:10]
+        
+        # Recent Activity Timeline (last 7 days) - Using StudentGeneratedPaper created_at
+        recent_activity = []
+        for i in range(6, -1, -1):
+            date = timezone.now().date() - timezone.timedelta(days=i)
+            users_count = User.objects.filter(date_joined__date=date).count()
+            papers_count = StudentGeneratedPaper.objects.filter(created_at__date=date).count()
+            recent_activity.append({
+                'date': date.strftime('%Y-%m-%d'),
+                'display_date': date.strftime('%b %d'),
+                'users': users_count,
+                'questions': papers_count,  # Using papers as activity indicator
+            })
+        
+        # System Performance Metrics
+        active_users_today = User.objects.filter(last_login__date=timezone.now().date()).count()
+        
+        # Paper Generation Statistics
+        total_papers_generated = StudentGeneratedPaper.objects.count()
+        papers_today = StudentGeneratedPaper.objects.filter(created_at__date=timezone.now().date()).count()
+        papers_this_week = StudentGeneratedPaper.objects.filter(created_at__gte=timezone.now() - timezone.timedelta(days=7)).count()
+        papers_this_month = StudentGeneratedPaper.objects.filter(created_at__gte=timezone.now() - timezone.timedelta(days=30)).count()
+        
+        # Paper Generation by Role
+        student_papers = StudentGeneratedPaper.objects.filter(student__role='student').count()
+        staff_papers = StudentGeneratedPaper.objects.filter(student__role='staff').count()
+        admin_papers = StudentGeneratedPaper.objects.filter(student__role='admin').count()
+        
+        # Calculate percentages
+        student_percentage = (role_distribution['students'] / total_users * 100) if total_users > 0 else 0
+        staff_percentage = (role_distribution['staff'] / total_users * 100) if total_users > 0 else 0
+        admin_percentage = (role_distribution['admins'] / total_users * 100) if total_users > 0 else 0
+        
+        context = {
+            # User Stats
+            'total_users': total_users,
+            'users_today': users_today,
+            'users_this_week': users_this_week,
+            'users_this_month': users_this_month,
+            'role_distribution': role_distribution,
+            'active_users_today': active_users_today,
+            
+            # Question Stats
+            'total_questions': total_questions,
+            'questions_today': questions_today,
+            'questions_this_week': questions_this_week,
+            'questions_this_month': questions_this_month,
+            'marks_distribution': marks_distribution,
+            'difficulty_distribution': difficulty_distribution,
+            
+            # Subject Stats
+            'subjects': subjects,
+            'top_contributors': top_contributors,
+            
+            # Activity Stats
+            'recent_activity': recent_activity,
+            'total_papers_generated': total_papers_generated,
+            'papers_today': papers_today,
+            'papers_this_week': papers_this_week,
+            'papers_this_month': papers_this_month,
+            
+            # Paper Generation by Role
+            'student_papers': student_papers,
+            'staff_papers': staff_papers,
+            'admin_papers': admin_papers,
+            
+            # Calculations for percentages
+            'student_percentage': student_percentage,
+            'staff_percentage': staff_percentage,
+            'admin_percentage': admin_percentage,
+        }
+        
+        return render(request, "analytics_dashboard.html", context)
+        
+    except Exception as e:
+        messages.error(request, f"Error loading analytics: {str(e)}")
+        return HttpResponseRedirect(reverse("admin_dashboard"))
+    
+@login_required(login_url='student_login')
+def system_settings(request):
+    """System settings page for admin"""
+    if request.user.role != 'admin':
+        messages.error(request, "Access denied. Admin privileges required.")
+        return HttpResponseRedirect(reverse("dashboard"))
+    
+    # System information
+    total_users = User.objects.count()
+    total_questions = QPattern.objects.count()
+    total_subjects = Subject.objects.count()
+    total_papers = StudentGeneratedPaper.objects.count()
+    
+    # Database information
+    from django.db import connection
+    db_info = {
+        'engine': connection.vendor,
+        'name': connection.settings_dict['NAME'],
+        'version': connection.cursor().connection.server_version if connection.vendor == 'postgresql' else 'N/A'
+    }
+    
+    context = {
+        'total_users': total_users,
+        'total_questions': total_questions,
+        'total_subjects': total_subjects,
+        'total_papers': total_papers,
+        'db_info': db_info,
+    }
+    
+    return render(request, "system_settings.html", context)
+    
 
 @login_required(login_url='student_login')
+def explore_data(request):
+    """Comprehensive data exploration page for admin"""
+    if request.user.role != 'admin':
+        messages.error(request, "Access denied. Admin privileges required.")
+        return HttpResponseRedirect(reverse("dashboard"))
+    
+    try:
+        # Base querysets
+        questions = QPattern.objects.select_related('subject', 'topic', 'user').all().order_by('-id')
+        subjects = Subject.objects.all().order_by('name')
+        all_users = User.objects.all().order_by('username')
+        generated_papers = StudentGeneratedPaper.objects.select_related('student').all().order_by('-created_at')
+        
+        # Apply filters for questions
+        search_query = request.GET.get('search', '')
+        selected_subject = request.GET.get('subject', '')
+        selected_marks = request.GET.get('marks', '')
+        selected_difficulty = request.GET.get('difficulty', '')
+        selected_user = request.GET.get('user', '')
+        
+        if search_query:
+            questions = questions.filter(question__icontains=search_query)
+        
+        if selected_subject:
+            questions = questions.filter(subject_id=selected_subject)
+        
+        if selected_marks:
+            questions = questions.filter(marks=int(selected_marks))
+        
+        if selected_difficulty:
+            questions = questions.filter(difficulty=int(selected_difficulty))
+        
+        if selected_user:
+            questions = questions.filter(user_id=selected_user)
+        
+        # Statistics
+        total_questions = QPattern.objects.count()
+        total_subjects = Subject.objects.count()
+        total_topics = Topic.objects.count()
+        total_users = User.objects.count()
+        total_generated_papers = StudentGeneratedPaper.objects.count()
+        
+        # Marks distribution
+        marks_distribution = {
+            'marks_2': QPattern.objects.filter(marks=2).count(),
+            'marks_5': QPattern.objects.filter(marks=5).count(),
+            'marks_10': QPattern.objects.filter(marks=10).count(),
+            'total': QPattern.objects.aggregate(Sum('marks'))['marks__sum'] or 0
+        }
+        
+        # Difficulty distribution
+        difficulty_distribution = {}
+        for i in range(1, 6):
+            difficulty_distribution[f'level_{i}'] = QPattern.objects.filter(difficulty=i).count()
+        
+        # Get subjects with statistics using aggregation
+        subjects_with_stats = []
+        for subject in subjects:
+            # Get question counts by marks for this subject
+            marks_counts = QPattern.objects.filter(subject=subject).values('marks').annotate(count=Count('id'))
+            
+            marks_2_count = 0
+            marks_5_count = 0
+            marks_10_count = 0
+            
+            for item in marks_counts:
+                if item['marks'] == 2:
+                    marks_2_count = item['count']
+                elif item['marks'] == 5:
+                    marks_5_count = item['count']
+                elif item['marks'] == 10:
+                    marks_10_count = item['count']
+            
+            total_count = marks_2_count + marks_5_count + marks_10_count
+            
+            # Get topics for this subject
+            subject_topics = []
+            topics_for_subject = Topic.objects.filter(sub=subject)
+            for topic in topics_for_subject:
+                topic_count = QPattern.objects.filter(topic=topic).count()
+                subject_topics.append({
+                    'id': topic.id,
+                    'name': topic.name,
+                    'question_count': topic_count
+                })
+            
+            # Calculate percentages safely
+            marks_2_percent = (marks_2_count / total_count * 100) if total_count > 0 else 0
+            marks_5_percent = (marks_5_count / total_count * 100) if total_count > 0 else 0
+            marks_10_percent = (marks_10_count / total_count * 100) if total_count > 0 else 0
+            
+            subjects_with_stats.append({
+                'id': subject.id,
+                'name': subject.name,
+                'question_count': total_count,
+                'marks_2_count': marks_2_count,
+                'marks_5_count': marks_5_count,
+                'marks_10_count': marks_10_count,
+                'marks_2_percent': marks_2_percent,
+                'marks_5_percent': marks_5_percent,
+                'marks_10_percent': marks_10_percent,
+                'topics': subject_topics
+            })
+        
+        # Pagination
+        questions_per_page = 15
+        papers_per_page = 10
+        
+        questions_paginator = Paginator(questions, questions_per_page)
+        papers_paginator = Paginator(generated_papers, papers_per_page)
+        
+        page_questions = request.GET.get('page')
+        page_papers = request.GET.get('page_papers')
+        
+        questions_page = questions_paginator.get_page(page_questions)
+        papers_page = papers_paginator.get_page(page_papers)
+        
+        # Build query string for pagination
+        query_params = request.GET.copy()
+        if 'page' in query_params:
+            del query_params['page']
+        if 'page_papers' in query_params:
+            del query_params['page_papers']
+        query_string = query_params.urlencode()
+        
+        context = {
+            # Data
+            'questions': questions_page,
+            'subjects': subjects,
+            'all_users': all_users,
+            'generated_papers': papers_page,
+            'subjects_with_stats': subjects_with_stats,
+            
+            # Filters
+            'search_query': search_query,
+            'selected_subject': selected_subject,
+            'selected_marks': selected_marks,
+            'selected_difficulty': selected_difficulty,
+            'selected_user': selected_user,
+            'query_string': query_string,
+            
+            # Statistics
+            'total_questions': total_questions,
+            'total_subjects': total_subjects,
+            'total_topics': total_topics,
+            'total_users': total_users,
+            'total_generated_papers': total_generated_papers,
+            'marks_distribution': marks_distribution,
+            'difficulty_distribution': difficulty_distribution,
+        }
+        
+        # Handle exports
+        export_format = request.GET.get('export')
+        if export_format:
+            return export_questions_data(questions, export_format)
+        
+        return render(request, "explore_data.html", context)
+        
+    except Exception as e:
+        messages.error(request, f"Error loading data exploration: {str(e)}")
+        return HttpResponseRedirect(reverse("admin_dashboard"))
+
+def export_questions_data(queryset, format_type):
+    """Export questions data in various formats"""
+    try:
+        if format_type == 'csv':
+            import csv
+            from django.http import HttpResponse
+            
+            response = HttpResponse(content_type='text/csv')
+            response['Content-Disposition'] = 'attachment; filename="questions_export.csv"'
+            
+            writer = csv.writer(response)
+            writer.writerow(['ID', 'Question', 'Subject', 'Topic', 'Marks', 'Difficulty', 'Created By', 'User Role'])
+            
+            for question in queryset:
+                writer.writerow([
+                    question.id,
+                    question.question,
+                    question.subject.name,
+                    question.topic.name,
+                    question.marks,
+                    question.difficulty,
+                    question.user.username,
+                    question.user.role
+                ])
+            
+            return response
+            
+        elif format_type == 'json':
+            from django.http import JsonResponse
+            
+            data = []
+            for question in queryset:
+                data.append({
+                    'id': question.id,
+                    'question': question.question,
+                    'subject': question.subject.name,
+                    'topic': question.topic.name,
+                    'marks': question.marks,
+                    'difficulty': question.difficulty,
+                    'created_by': question.user.username,
+                    'user_role': question.user.role
+                })
+            
+            return JsonResponse(data, safe=False)
+            
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+@login_required(login_url='student_login')
+def question_detail_ajax(request, question_id):
+    """AJAX view for question details"""
+    try:
+        question = get_object_or_404(QPattern, id=question_id)
+        
+        # Build the HTML content properly without Django template syntax
+        html = f"""
+        <div class="row">
+            <div class="col-md-8">
+                <h6>Question Text:</h6>
+                <div class="border p-3 bg-light rounded mb-3">
+                    {question.question}
+                </div>
+        """
+        
+        # Add answer section only if answer exists
+        if question.answer:
+            html += f"""
+                <h6>Answer:</h6>
+                <div class="border p-3 bg-light rounded">
+                    {question.answer}
+                </div>
+            """
+        
+        # Continue with the rest of the HTML
+        html += f"""
+            </div>
+            <div class="col-md-4">
+                <h6>Details:</h6>
+                <table class="table table-sm">
+                    <tr><td><strong>Subject:</strong></td><td>{question.subject.name}</td></tr>
+                    <tr><td><strong>Topic:</strong></td><td>{question.topic.name}</td></tr>
+                    <tr><td><strong>Marks:</strong></td><td>{question.marks}</td></tr>
+                    <tr><td><strong>Difficulty:</strong></td><td>{question.difficulty}/5</td></tr>
+                    <tr><td><strong>Created By:</strong></td><td>{question.user.username} ({question.user.role})</td></tr>
+                    <tr><td><strong>Created:</strong></td><td>{question.user.date_joined.strftime('%Y-%m-%d')}</td></tr>
+                </table>
+            </div>
+        </div>
+        """
+        
+        return JsonResponse({'success': True, 'html': html})
+        
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})@login_required(login_url='student_login')
 def student_generate_custom_paper(request):
     """Generate a custom question paper for students from selected questions"""
     if request.method == "POST":

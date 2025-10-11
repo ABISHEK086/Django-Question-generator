@@ -1,0 +1,741 @@
+<!-- QGen/QPaperGeneration/templates/analytics_dashboard.html -->
+{% extends "layout.html" %}
+
+{% block title %}Analytics Dashboard - Admin{% endblock %}
+
+{% block body %}
+<div class="container-fluid py-4">
+    <!-- Header with Back Button -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card bg-gradient-primary text-white shadow-lg">
+                <div class="card-body py-4">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <div class="d-flex align-items-center">
+                                {% comment %} <a href="{% url 'admin_dashboard' %}" class="btn btn-light btn-sm me-3" title="Back to Dashboard">
+                                    <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+                                </a> {% endcomment %}
+                                <div>
+                                    <h1 class="display-6 fw-bold mb-2">
+                                        <i class="fas fa-chart-line me-2"></i>Analytics Dashboard
+                                    </h1>
+                                    <p class="lead mb-0">Comprehensive system analytics and performance metrics</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <div class="bg-white bg-opacity-25 rounded-pill px-3 py-2 d-inline-block">
+                                <i class="fas fa-chart-bar me-2"></i>
+                                <span class="fw-bold">Real-time Data</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Stats Row -->
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <div class="text-primary mb-2">
+                        <i class="fas fa-users fa-2x"></i>
+                    </div>
+                    <h3 class="text-primary mb-1">{{ total_users }}</h3>
+                    <p class="text-muted mb-0">Total Users</p>
+                    <small class="text-success">
+                        <i class="fas fa-arrow-up me-1"></i>{{ users_today }} today
+                    </small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <div class="text-success mb-2">
+                        <i class="fas fa-question-circle fa-2x"></i>
+                    </div>
+                    <h3 class="text-success mb-1">{{ total_questions }}</h3>
+                    <p class="text-muted mb-0">Total Questions</p>
+                    <small class="text-muted">
+                        All time
+                    </small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <div class="text-info mb-2">
+                        <i class="fas fa-file-pdf fa-2x"></i>
+                    </div>
+                    <h3 class="text-info mb-1">{{ total_papers_generated }}</h3>
+                    <p class="text-muted mb-0">Papers Generated</p>
+                    <small class="text-success">
+                        <i class="fas fa-arrow-up me-1"></i>{{ papers_today }} today
+                    </small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <div class="text-warning mb-2">
+                        <i class="fas fa-user-check fa-2x"></i>
+                    </div>
+                    <h3 class="text-warning mb-1">{{ active_users_today }}</h3>
+                    <p class="text-muted mb-0">Active Today</p>
+                    <small class="text-muted">
+                        {% widthratio active_users_today total_users 100 %}% of users
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Analytics Content -->
+    <div class="row">
+        <!-- Left Column -->
+        <div class="col-lg-8">
+            <!-- Activity Growth Chart -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-white border-0 py-3">
+                            <h5 class="mb-0">
+                                <i class="fas fa-chart-line me-2 text-primary"></i>
+                                System Activity (Last 7 Days)
+                            </h5>
+                        </div>
+                        <div class="card-body p-3">
+                            <div class="chart-wrapper" style="height: 350px;">
+                                <canvas id="activityGrowthChart" width="600" height="350"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Subject Distribution -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-white border-0 py-3">
+                            <h5 class="mb-0">
+                                <i class="fas fa-book me-2 text-info"></i>
+                                Subject Distribution
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            {% if subjects %}
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Subject</th>
+                                            <th>Questions</th>
+                                            <th>Avg Difficulty</th>
+                                            <th>Avg Marks</th>
+                                            <th>Progress</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for subject in subjects %}
+                                        <tr>
+                                            <td>
+                                                <strong>{{ subject.name }}</strong>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-primary">{{ subject.question_count }}</span>
+                                            </td>
+                                            <td>
+                                                <span class="badge {% if subject.avg_difficulty < 3 %}bg-success{% elif subject.avg_difficulty < 4 %}bg-warning{% else %}bg-danger{% endif %}">
+                                                    {{ subject.avg_difficulty|default:0|floatformat:1 }}/5
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-info">
+                                                    {{ subject.avg_marks|default:0|floatformat:1 }}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <div class="progress" style="height: 8px;">
+                                                    {% if subjects.0.question_count > 0 %}
+                                                        {% widthratio subject.question_count subjects.0.question_count 100 as percentage %}
+                                                    {% else %}
+                                                        {% widthratio 0 1 100 as percentage %}
+                                                    {% endif %}
+                                                    <div class="progress-bar bg-success" role="progressbar" 
+                                                         style="width: {{ percentage }}%"
+                                                         aria-valuenow="{{ percentage }}" aria-valuemin="0" aria-valuemax="100">
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {% else %}
+                            <div class="text-center py-4">
+                                <i class="fas fa-book display-1 text-muted mb-3"></i>
+                                <p class="text-muted">No subjects available.</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column -->
+        <div class="col-lg-4">
+            <!-- User Role Distribution -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-white border-0 py-3">
+                            <h5 class="mb-0">
+                                <i class="fas fa-users me-2 text-success"></i>
+                                User Role Distribution
+                            </h5>
+                        </div>
+                        <div class="card-body p-3">
+                            <div class="chart-wrapper" style="height: 300px;">
+                                <canvas id="roleDistributionChart" width="400" height="300"></canvas>
+                            </div>
+                            <div class="mt-4">
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span>Students:</span>
+                                    <span class="fw-bold text-success">{{ role_distribution.students }} ({{ student_percentage|floatformat:1 }}%)</span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span>Staff:</span>
+                                    <span class="fw-bold text-info">{{ role_distribution.staff }} ({{ staff_percentage|floatformat:1 }}%)</span>
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <span>Admins:</span>
+                                    <span class="fw-bold text-warning">{{ role_distribution.admins }} ({{ admin_percentage|floatformat:1 }}%)</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Marks Distribution -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-white border-0 py-3">
+                            <h5 class="mb-0">
+                                <i class="fas fa-star me-2 text-warning"></i>
+                                Marks Distribution
+                            </h5>
+                        </div>
+                        <div class="card-body p-3">
+                            <div class="chart-wrapper" style="height: 250px;">
+                                <canvas id="marksDistributionChart" width="400" height="250"></canvas>
+                            </div>
+                            <div class="mt-4 text-center">
+                                <div class="row">
+                                    <div class="col-4">
+                                        <div class="text-primary">
+                                            <h5>{{ marks_distribution.2_marks }}</h5>
+                                            <small>2 Marks</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="text-success">
+                                            <h5>{{ marks_distribution.5_marks }}</h5>
+                                            <small>5 Marks</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="text-info">
+                                            <h5>{{ marks_distribution.10_marks }}</h5>
+                                            <small>10 Marks</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Row -->
+    <div class="row">
+        <!-- Top Contributors -->
+        <div class="col-lg-6 mb-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-0 py-3">
+                    <h5 class="mb-0">
+                        <i class="fas fa-trophy me-2 text-warning"></i>
+                        Top Contributors
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if top_contributors %}
+                    <div class="list-group list-group-flush">
+                        {% for user in top_contributors %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center">
+                                <div class="avatar-sm me-3">
+                                    <i class="fas fa-user-circle fa-lg text-muted"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-1">{{ user.username }}</h6>
+                                    <small class="text-muted">
+                                        <span class="badge 
+                                            {% if user.role == 'admin' %}bg-warning text-dark
+                                            {% elif user.role == 'staff' %}bg-info
+                                            {% else %}bg-success{% endif %}">
+                                            {{ user.get_role_display }}
+                                        </span>
+                                    </small>
+                                </div>
+                            </div>
+                            <div class="text-end">
+                                <h5 class="text-primary mb-0">{{ user.question_count }}</h5>
+                                <small class="text-muted">questions</small>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-users display-1 text-muted mb-3"></i>
+                        <p class="text-muted">No contributors yet.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Paper Generation Stats -->
+        <div class="col-lg-6 mb-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-0 py-3">
+                    <h5 class="mb-0">
+                        <i class="fas fa-file-pdf me-2 text-danger"></i>
+                        Paper Generation Statistics
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-6 mb-4">
+                            <div class="performance-card">
+                                <div class="text-success mb-2">
+                                    <i class="fas fa-calendar-day fa-2x"></i>
+                                </div>
+                                <h4 class="text-success mb-1">{{ papers_today }}</h4>
+                                <small class="text-muted">Today</small>
+                            </div>
+                        </div>
+                        <div class="col-6 mb-4">
+                            <div class="performance-card">
+                                <div class="text-info mb-2">
+                                    <i class="fas fa-calendar-week fa-2x"></i>
+                                </div>
+                                <h4 class="text-info mb-1">{{ papers_this_week }}</h4>
+                                <small class="text-muted">This Week</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="performance-card">
+                                <div class="text-warning mb-2">
+                                    <i class="fas fa-calendar-alt fa-2x"></i>
+                                </div>
+                                <h4 class="text-warning mb-1">{{ papers_this_month }}</h4>
+                                <small class="text-muted">This Month</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="performance-card">
+                                <div class="text-primary mb-2">
+                                    <i class="fas fa-chart-line fa-2x"></i>
+                                </div>
+                                <h4 class="text-primary mb-1">{{ total_papers_generated }}</h4>
+                                <small class="text-muted">Total</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-3 pt-3 border-top">
+                        <h6 class="fw-semibold mb-2">By User Role:</h6>
+                        <div class="d-flex justify-content-between small">
+                            <span>Students: {{ student_papers }}</span>
+                            <span>Staff: {{ staff_papers }}</span>
+                            <span>Admins: {{ admin_papers }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Difficulty Distribution -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-0 py-3">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-bar me-2 text-info"></i>
+                        Question Difficulty Distribution
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        {% for level, count in difficulty_distribution.items %}
+                        <div class="col-2 mb-3">
+                            <div class="difficulty-level">
+                                <div class="level-number 
+                                    {% if forloop.counter == 1 %}bg-success
+                                    {% elif forloop.counter == 2 %}bg-info
+                                    {% elif forloop.counter == 3 %}bg-warning
+                                    {% elif forloop.counter == 4 %}bg-orange
+                                    {% else %}bg-danger{% endif %}">
+                                    {{ forloop.counter }}
+                                </div>
+                                <h4 class="my-2">{{ count }}</h4>
+                                <small class="text-muted">Level {{ forloop.counter }}</small>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Back to Dashboard Button - Bottom -->
+    <div class="row mt-4">
+        <div class="col-12 text-center">
+            <a href="{% url 'admin_dashboard' %}" class="btn btn-primary btn-lg">
+                <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+.bg-gradient-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.chart-wrapper {
+    position: relative;
+    background: white;
+    border-radius: 8px;
+}
+
+.performance-card {
+    padding: 1rem;
+    border-radius: 10px;
+    background-color: #f8f9fa;
+    transition: all 0.3s ease;
+}
+
+.performance-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.difficulty-level {
+    padding: 1rem;
+}
+
+.level-number {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    margin: 0 auto;
+}
+
+.bg-orange {
+    background-color: #fd7e14 !important;
+}
+
+.avatar-sm {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.progress {
+    background-color: #e9ecef;
+    border-radius: 4px;
+}
+
+.card {
+    border-radius: 15px;
+}
+
+.list-group-item {
+    border: none;
+    padding: 1rem 0;
+}
+
+.list-group-item:first-child {
+    padding-top: 0;
+}
+
+.list-group-item:last-child {
+    padding-bottom: 0;
+}
+
+/* Fix for crisp charts */
+.chart-wrapper canvas {
+    display: block;
+    max-width: 100%;
+    height: auto !important;
+}
+</style>
+
+<!-- Include Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+// Function to create crisp charts
+function createCrispChart(canvasId, config) {
+    const canvas = document.getElementById(canvasId);
+    const ctx = canvas.getContext('2d');
+    
+    // Get the device pixel ratio
+    const dpr = window.devicePixelRatio || 1;
+    
+    // Get the computed style of the canvas
+    const style = getComputedStyle(canvas);
+    const width = parseInt(style.width);
+    const height = parseInt(style.height);
+    
+    // Set the canvas dimensions considering the device pixel ratio
+    canvas.width = width * dpr;
+    canvas.height = height * dpr;
+    canvas.style.width = width + 'px';
+    canvas.style.height = height + 'px';
+    
+    // Scale the context to ensure correct drawing operations
+    ctx.scale(dpr, dpr);
+    
+    // Create the chart with the scaled context
+    return new Chart(ctx, config);
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Prepare data for charts
+    const recentActivity = {{ recent_activity|safe }};
+    
+    // Extract labels and data for the activity growth chart
+    const labels = recentActivity.map(item => item.display_date);
+    const userData = recentActivity.map(item => item.users);
+    const questionData = recentActivity.map(item => item.questions);
+
+    // Set global chart defaults for better visibility
+    Chart.defaults.font.family = "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
+    Chart.defaults.font.size = 13;
+    Chart.defaults.color = '#2c3e50';
+    Chart.defaults.plugins.tooltip.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+    Chart.defaults.plugins.legend.labels.usePointStyle = true;
+    Chart.defaults.plugins.legend.labels.font = { size: 12, weight: 'bold' };
+
+    // Activity Growth Chart
+    createCrispChart('activityGrowthChart', {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'New Users',
+                    data: userData,
+                    borderColor: '#4361ee',
+                    backgroundColor: 'rgba(67, 97, 238, 0.1)',
+                    borderWidth: 3,
+                    tension: 0.4,
+                    fill: true,
+                    pointBackgroundColor: '#4361ee',
+                    pointBorderColor: '#ffffff',
+                    pointBorderWidth: 2,
+                    pointRadius: 5,
+                    pointHoverRadius: 7
+                },
+                {
+                    label: 'Papers Generated',
+                    data: questionData,
+                    borderColor: '#06d6a0',
+                    backgroundColor: 'rgba(6, 214, 160, 0.1)',
+                    borderWidth: 3,
+                    tension: 0.4,
+                    fill: true,
+                    pointBackgroundColor: '#06d6a0',
+                    pointBorderColor: '#ffffff',
+                    pointBorderWidth: 2,
+                    pointRadius: 5,
+                    pointHoverRadius: 7
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'top',
+                    labels: {
+                        font: {
+                            size: 13,
+                            weight: 'bold'
+                        },
+                        padding: 20
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        font: {
+                            size: 12
+                        },
+                        precision: 0
+                    },
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.1)'
+                    }
+                },
+                x: {
+                    ticks: {
+                        font: {
+                            size: 12
+                        }
+                    },
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.1)'
+                    }
+                }
+            }
+        }
+    });
+
+    // Role Distribution Chart
+    createCrispChart('roleDistributionChart', {
+        type: 'doughnut',
+        data: {
+            labels: ['Students', 'Staff', 'Admins'],
+            datasets: [{
+                data: [
+                    {{ role_distribution.students }},
+                    {{ role_distribution.staff }},
+                    {{ role_distribution.admins }}
+                ],
+                backgroundColor: [
+                    '#06d6a0',
+                    '#4361ee',
+                    '#ffd166'
+                ],
+                borderWidth: 2,
+                borderColor: '#ffffff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        font: {
+                            size: 12,
+                            weight: 'bold'
+                        },
+                        padding: 20
+                    }
+                }
+            },
+            cutout: '55%'
+        }
+    });
+
+    // Marks Distribution Chart
+    createCrispChart('marksDistributionChart', {
+        type: 'bar',
+        data: {
+            labels: ['2 Marks', '5 Marks', '10 Marks'],
+            datasets: [{
+                data: [
+                    {{ marks_distribution.2_marks }},
+                    {{ marks_distribution.5_marks }},
+                    {{ marks_distribution.10_marks }}
+                ],
+                backgroundColor: [
+                    '#4361ee',
+                    '#06d6a0',
+                    '#118ab2'
+                ],
+                borderWidth: 0,
+                borderRadius: 6
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        font: {
+                            size: 12
+                        },
+                        precision: 0
+                    },
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.1)'
+                    }
+                },
+                x: {
+                    ticks: {
+                        font: {
+                            size: 12,
+                            weight: 'bold'
+                        }
+                    },
+                    grid: {
+                        display: false
+                    }
+                }
+            }
+        }
+    });
+
+    // Add animations to cards
+    const cards = document.querySelectorAll('.card');
+    cards.forEach((card, index) => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(20px)';
+        
+        setTimeout(() => {
+            card.style.transition = 'all 0.5s ease';
+            card.style.opacity = '1';
+            card.style.transform = 'translateY(0)';
+        }, index * 100);
+    });
+});
+</script>
+{% endblock %}

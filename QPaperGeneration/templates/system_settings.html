@@ -1,0 +1,575 @@
+<!-- QGen/QPaperGeneration/templates/system_settings.html -->
+{% extends "layout.html" %}
+
+{% block title %}System Settings - Admin{% endblock %}
+
+{% block body %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card bg-gradient-primary text-white shadow-lg">
+                <div class="card-body py-4">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <div class="d-flex align-items-center">
+                                <a href="{% url 'admin_dashboard' %}" class="btn btn-light btn-sm me-3" title="Back to Dashboard">
+                                    <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+                                </a>
+                                <div>
+                                    <h1 class="display-6 fw-bold mb-2">
+                                        <i class="fas fa-cog me-2"></i>System Settings
+                                    </h1>
+                                    <p class="lead mb-0">Configure and manage QGen system settings</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <div class="bg-white bg-opacity-25 rounded-pill px-3 py-2 d-inline-block">
+                                <i class="fas fa-sliders-h me-2"></i>
+                                <span class="fw-bold">Configuration</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- System Overview -->
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <div class="text-primary mb-2">
+                        <i class="fas fa-database fa-2x"></i>
+                    </div>
+                    <h3 class="text-primary mb-1">{{ db_info.engine|title }}</h3>
+                    <p class="text-muted mb-0">Database Engine</p>
+                    <small class="text-muted">
+                        Version: {{ db_info.version }}
+                    </small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <div class="text-success mb-2">
+                        <i class="fas fa-users fa-2x"></i>
+                    </div>
+                    <h3 class="text-success mb-1">{{ total_users }}</h3>
+                    <p class="text-muted mb-0">Total Users</p>
+                    <small class="text-muted">
+                        Registered accounts
+                    </small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <div class="text-info mb-2">
+                        <i class="fas fa-question-circle fa-2x"></i>
+                    </div>
+                    <h3 class="text-info mb-1">{{ total_questions }}</h3>
+                    <p class="text-muted mb-0">Questions</p>
+                    <small class="text-muted">
+                        In database
+                    </small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <div class="text-warning mb-2">
+                        <i class="fas fa-file-pdf fa-2x"></i>
+                    </div>
+                    <h3 class="text-warning mb-1">{{ total_papers }}</h3>
+                    <p class="text-muted mb-0">Generated Papers</p>
+                    <small class="text-muted">
+                        All time
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Settings Sections -->
+    <div class="row">
+        <!-- Left Column - System Configuration -->
+        <div class="col-lg-8">
+            <!-- General Settings -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-white border-0 py-3">
+                            <h5 class="mb-0">
+                                <i class="fas fa-wrench me-2 text-primary"></i>
+                                General Settings
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <form id="generalSettingsForm">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label fw-semibold">System Name</label>
+                                        <input type="text" class="form-control" value="QGen Question Paper Generator" placeholder="Enter system name">
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label fw-semibold">Admin Email</label>
+                                        <input type="email" class="form-control" value="admin@qgen.edu" placeholder="Admin contact email">
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label fw-semibold">Default User Role</label>
+                                        <select class="form-select">
+                                            <option value="student" selected>Student</option>
+                                            <option value="staff">Staff</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label fw-semibold">Max Questions per Paper</label>
+                                        <input type="number" class="form-control" value="50" min="1" max="100">
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="userRegistration" checked>
+                                        <label class="form-check-label fw-semibold" for="userRegistration">
+                                            Allow User Registration
+                                        </label>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="emailNotifications" checked>
+                                        <label class="form-check-label fw-semibold" for="emailNotifications">
+                                            Email Notifications
+                                        </label>
+                                    </div>
+                                </div>
+                                
+                                <div class="text-end">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-save me-2"></i>Save General Settings
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Security Settings -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-white border-0 py-3">
+                            <h5 class="mb-0">
+                                <i class="fas fa-shield-alt me-2 text-warning"></i>
+                                Security Settings
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <form id="securitySettingsForm">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label fw-semibold">Password Policy</label>
+                                        <select class="form-select">
+                                            <option value="low">Low (6+ characters)</option>
+                                            <option value="medium" selected>Medium (8+ characters, mixed case)</option>
+                                            <option value="high">High (12+ characters, special characters)</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label fw-semibold">Session Timeout (minutes)</label>
+                                        <input type="number" class="form-control" value="120" min="15" max="1440">
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="twoFactorAuth">
+                                        <label class="form-check-label fw-semibold" for="twoFactorAuth">
+                                            Enable Two-Factor Authentication (Admin only)
+                                        </label>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="loginAlerts" checked>
+                                        <label class="form-check-label fw-semibold" for="loginAlerts">
+                                            Login Security Alerts
+                                        </label>
+                                    </div>
+                                </div>
+                                
+                                <div class="text-end">
+                                    <button type="submit" class="btn btn-warning">
+                                        <i class="fas fa-save me-2"></i>Save Security Settings
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Database Management -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-white border-0 py-3">
+                            <h5 class="mb-0">
+                                <i class="fas fa-database me-2 text-info"></i>
+                                Database Management
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <div class="card bg-light border-0">
+                                        <div class="card-body text-center">
+                                            <i class="fas fa-download fa-2x text-primary mb-3"></i>
+                                            <h5>Export Data</h5>
+                                            <p class="text-muted small">Export all system data as backup</p>
+                                            <button class="btn btn-outline-primary btn-sm">
+                                                <i class="fas fa-file-export me-2"></i>Export Now
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <div class="card bg-light border-0">
+                                        <div class="card-body text-center">
+                                            <i class="fas fa-trash-alt fa-2x text-danger mb-3"></i>
+                                            <h5>Cleanup</h5>
+                                            <p class="text-muted small">Remove old data and optimize</p>
+                                            <button class="btn btn-outline-danger btn-sm">
+                                                <i class="fas fa-broom me-2"></i>Cleanup Now
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="alert alert-info mt-3">
+                                <i class="fas fa-info-circle me-2"></i>
+                                <strong>Database Information:</strong> {{ db_info.engine|title }} database ({{ db_info.name }})
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column - Quick Actions & System Status -->
+        <div class="col-lg-4">
+            <!-- System Status -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-white border-0 py-3">
+                            <h5 class="mb-0">
+                                <i class="fas fa-heartbeat me-2 text-success"></i>
+                                System Status
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="system-status">
+                                <div class="d-flex justify-content-between align-items-center mb-3 p-2 rounded bg-light">
+                                    <span>Database</span>
+                                    <span class="badge bg-success">Online</span>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center mb-3 p-2 rounded bg-light">
+                                    <span>Storage</span>
+                                    <span class="badge bg-success">85% Free</span>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center mb-3 p-2 rounded bg-light">
+                                    <span>Memory Usage</span>
+                                    <span class="badge bg-warning">65%</span>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center mb-3 p-2 rounded bg-light">
+                                    <span>CPU Load</span>
+                                    <span class="badge bg-success">Normal</span>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center p-2 rounded bg-light">
+                                    <span>Uptime</span>
+                                    <span class="badge bg-info">99.8%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-white border-0 py-3">
+                            <h5 class="mb-0">
+                                <i class="fas fa-bolt me-2 text-warning"></i>
+                                Quick Actions
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="d-grid gap-2">
+                                <button class="btn btn-outline-primary text-start">
+                                    <i class="fas fa-redo me-2"></i>
+                                    Clear Cache
+                                </button>
+                                <button class="btn btn-outline-success text-start">
+                                    <i class="fas fa-sync me-2"></i>
+                                    Update System
+                                </button>
+                                <button class="btn btn-outline-info text-start">
+                                    <i class="fas fa-key me-2"></i>
+                                    Reset All Passwords
+                                </button>
+                                <button class="btn btn-outline-warning text-start">
+                                    <i class="fas fa-archive me-2"></i>
+                                    Backup Database
+                                </button>
+                                <button class="btn btn-outline-danger text-start">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>
+                                    Emergency Shutdown
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- System Information -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-white border-0 py-3">
+                            <h5 class="mb-0">
+                                <i class="fas fa-info-circle me-2 text-info"></i>
+                                System Information
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="small">
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span>QGen Version:</span>
+                                    <span class="fw-bold">v2.1.0</span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span>Django Version:</span>
+                                    <span class="fw-bold">4.2+</span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span>Python Version:</span>
+                                    <span class="fw-bold">3.8+</span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span>Last Updated:</span>
+                                    <span class="fw-bold">{% now "M j, Y" %}</span>
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <span>Support Contact:</span>
+                                    <span class="fw-bold">support@qgen.edu</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Danger Zone -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm border-danger">
+                <div class="card-header bg-danger text-white border-0 py-3">
+                    <h5 class="mb-0">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Danger Zone
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-danger">Reset System</h6>
+                            <p class="text-muted small">Reset all system data to factory defaults. This action cannot be undone.</p>
+                            <button class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#resetModal">
+                                <i class="fas fa-undo me-2"></i>Reset System
+                            </button>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-danger">Delete All Data</h6>
+                            <p class="text-muted small">Permanently delete all questions, users, and papers.</p>
+                            <button class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteModal">
+                                <i class="fas fa-trash me-2"></i>Delete All Data
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Reset System Modal -->
+<div class="modal fade" id="resetModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Reset System
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-danger fw-bold">Warning: This action cannot be undone!</p>
+                <p>This will reset the entire system to factory defaults. All data including users, questions, and papers will be permanently deleted.</p>
+                <div class="form-group">
+                    <label class="form-label">Type "RESET" to confirm:</label>
+                    <input type="text" class="form-control" id="resetConfirm" placeholder="Enter RESET to confirm">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmReset" disabled>Reset System</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Data Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-trash me-2"></i>
+                    Delete All Data
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-danger fw-bold">Warning: This action cannot be undone!</p>
+                <p>This will permanently delete all questions, papers, and user-generated content. User accounts will remain.</p>
+                <div class="form-group">
+                    <label class="form-label">Type "DELETE" to confirm:</label>
+                    <input type="text" class="form-control" id="deleteConfirm" placeholder="Enter DELETE to confirm">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmDelete" disabled>Delete All Data</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.bg-gradient-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.card {
+    border-radius: 15px;
+}
+
+.system-status .badge {
+    font-size: 0.75rem;
+}
+
+.form-check-input:checked {
+    background-color: #4361ee;
+    border-color: #4361ee;
+}
+
+.btn {
+    border-radius: 8px;
+}
+
+.modal-content {
+    border-radius: 15px;
+}
+
+/* Animation for settings cards */
+.settings-card {
+    transition: all 0.3s ease;
+}
+
+.settings-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Form submission handlers
+    document.getElementById('generalSettingsForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        showToast('General settings saved successfully!', 'success');
+    });
+
+    document.getElementById('securitySettingsForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        showToast('Security settings saved successfully!', 'success');
+    });
+
+    // Danger zone confirmation
+    document.getElementById('resetConfirm').addEventListener('input', function(e) {
+        document.getElementById('confirmReset').disabled = e.target.value !== 'RESET';
+    });
+
+    document.getElementById('deleteConfirm').addEventListener('input', function(e) {
+        document.getElementById('confirmDelete').disabled = e.target.value !== 'DELETE';
+    });
+
+    document.getElementById('confirmReset').addEventListener('click', function() {
+        showToast('System reset initiated!', 'warning');
+        $('#resetModal').modal('hide');
+    });
+
+    document.getElementById('confirmDelete').addEventListener('click', function() {
+        showToast('Data deletion initiated!', 'warning');
+        $('#deleteModal').modal('hide');
+    });
+
+    // Quick actions
+    document.querySelectorAll('.btn-outline-primary, .btn-outline-success, .btn-outline-info, .btn-outline-warning').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const action = this.textContent.trim();
+            showToast(`${action} action completed!`, 'info');
+        });
+    });
+
+    // Toast notification function
+    function showToast(message, type = 'info') {
+        // You can implement a toast notification here
+        alert(message); // Simple alert for now
+    }
+
+    // Add animations to cards
+    const cards = document.querySelectorAll('.card');
+    cards.forEach((card, index) => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(20px)';
+        
+        setTimeout(() => {
+            card.style.transition = 'all 0.5s ease';
+            card.style.opacity = '1';
+            card.style.transform = 'translateY(0)';
+        }, index * 100);
+    });
+});
+</script>
+{% endblock %}

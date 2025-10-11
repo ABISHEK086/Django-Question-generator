@@ -52,4 +52,9 @@ urlpatterns = [
     path('user-management/delete/<int:user_id>/', views.delete_user, name='delete_user'),
     path('user-management/reset-password/<int:user_id>/', views.reset_user_password, name='reset_user_password'),
     
+    path('analytics/', views.analytics_dashboard, name='analytics_dashboard'),
+    path('system-settings/', views.system_settings, name='system_settings'),
+    path('explore-data/', views.explore_data, name='explore_data'),
+    path('question/<int:question_id>/detail/', views.question_detail_ajax, name='question_detail_ajax'),
+    
 ]
