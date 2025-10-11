@@ -15,7 +15,6 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-+6(5*5k8xzyo#10(ii)0e2o_r^4t!-t9jrhp_0=a&x!1r6npm('
 DEBUG = True
-
 ALLOWED_HOSTS = []
 
 
