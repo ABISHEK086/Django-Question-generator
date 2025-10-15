@@ -13,8 +13,7 @@
         <div class="card-body">
             <form action="{% url 'myquestions' %}" method="post">
                 {% csrf_token %}
-
-                <!-- Heading Input -->
+                
                 <div class="mb-3">
                     <label for="InputQuestion" class="form-label fw-semibold">Heading</label>
                     <input type="text" name="question" class="form-control form-control-lg" id="InputQuestion" placeholder="Enter Header Text" required>
