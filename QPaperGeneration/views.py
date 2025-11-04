@@ -1,5 +1,5 @@
 import random
-import io 
+import io  
 import json
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_protect
