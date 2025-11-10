@@ -1,4 +1,4 @@
-import random    
+import random     
 import io              
 import json             
 from django.http import JsonResponse 
