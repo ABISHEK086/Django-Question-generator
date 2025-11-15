@@ -1,6 +1,6 @@
 from django.contrib.auth.models import AbstractUser           
 from django.db import models          
-import json                      
+import json                        
          
 class User(AbstractUser): 
     ROLE_CHOICES = [
