@@ -3,7 +3,7 @@ from . import views
  
 urlpatterns = [           
     # Main dashboard and authentication
-    path("", views.dashboard, name="dashboard"),   
+    path("", views.dashboard, name="dashboard"),    
     path("index", views.index, name="index"),      
          
     # Separate Login Pages  
