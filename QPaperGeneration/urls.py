@@ -1,7 +1,7 @@
 from django.urls import path
 from . import views 
 
-urlpatterns = [    
+urlpatterns = [     
     # Main dashboard and authentication
     path("", views.dashboard, name="dashboard"),
     path("index", views.index, name="index"),
