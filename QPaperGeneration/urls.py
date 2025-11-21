@@ -1,6 +1,6 @@
 from django.urls import path 
 from . import views 
- 
+  
 urlpatterns = [           
     # Main dashboard and authentication
     path("", views.dashboard, name="dashboard"),    
