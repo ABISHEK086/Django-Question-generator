@@ -10,7 +10,7 @@ urlpatterns = [
     path("student-login", views.student_login, name="student_login"),    
     path("staff-login", views.staff_login, name="staff_login"),
     path("admin-login", views.admin_login, name="admin_login"),
-    path("universal-login", views.universal_login, name="universal_login"),  
+    path("universal-login", views.universal_login, name="universal_login"),   
     
     # Universal logout
     path("logout", views.logout_view, name="logout"),
