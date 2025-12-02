@@ -4,7 +4,7 @@ import json
                        
 class User(AbstractUser):             
     ROLE_CHOICES = [         
-        ('student', 'Student'),          
+        ('student', 'Student'),           
         ('staff', 'Staff'),              
         ('admin', 'Admin'),     
     ]  
