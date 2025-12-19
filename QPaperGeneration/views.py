@@ -1,7 +1,7 @@
 import random        
 import io      
 import json                                
-from django.http import JsonResponse         
+from django.http import JsonResponse          
 from django.views.decorators.csrf import csrf_protect        
 from django.db import IntegrityError            
 from django.http import HttpResponseRedirect, FileResponse, HttpResponseForbidden
