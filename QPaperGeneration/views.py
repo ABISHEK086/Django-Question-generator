@@ -15,7 +15,7 @@ from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas 
 from reportlab.lib.utils import simpleSplit 
 from django.utils import timezone 
-from django.db.models import Avg, Count, Sum
+from django.db.models import Avg, Count, Sum 
 
 from QPaperGeneration.models import User, QPattern, Subject, Topic, StudentGeneratedPaper
 
