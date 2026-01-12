@@ -5,7 +5,7 @@ import json
 class User(AbstractUser):                     
     ROLE_CHOICES = [              
         ('student', 'Student'),                  
-        ('staff', 'Staff'),                
+        ('staff', 'Staff'),                 
         ('admin', 'Admin'),        
     ]  
     role = models.CharField(max_length=10, choices=ROLE_CHOICES, default='student')
