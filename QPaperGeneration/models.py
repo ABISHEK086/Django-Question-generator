@@ -3,7 +3,7 @@ from django.db import models
 import json                                          
                         
 class User(AbstractUser):                     
-    ROLE_CHOICES = [                 
+    ROLE_CHOICES = [                  
         ('student', 'Student'),                  
         ('staff', 'Staff'),                  
         ('admin', 'Admin'),        
