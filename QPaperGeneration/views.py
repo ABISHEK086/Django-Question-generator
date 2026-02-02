@@ -4,7 +4,7 @@ import json
 from django.http import JsonResponse                 
 from django.views.decorators.csrf import csrf_protect          
 from django.db import IntegrityError                 
-from django.http import HttpResponseRedirect, FileResponse, HttpResponseForbidden 
+from django.http import HttpResponseRedirect, FileResponse, HttpResponseForbidden  
 from django.shortcuts import render, get_object_or_404   
 from django.contrib.auth import authenticate, login, logout   
 from django.urls import reverse     
