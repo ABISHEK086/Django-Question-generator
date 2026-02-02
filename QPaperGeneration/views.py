@@ -13,7 +13,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages  
 from reportlab.lib.pagesizes import A4 
 from reportlab.pdfgen import canvas  
-from reportlab.lib.utils import simpleSplit  
+from reportlab.lib.utils import simpleSplit   
 from django.utils import timezone  
 from django.db.models import Avg, Count, Sum   
   
